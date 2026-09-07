@@ -1,0 +1,42 @@
+{
+  "id": "example:repeater_delay",
+  "default": "short",
+
+  "states": [
+    {
+      "name": "short",
+      "type": "double",
+      "value": 1,
+      "condition": {
+        "type": "property_equals",
+        "property": "powered",
+        "value": "false"
+      }
+    },
+    {
+      "name": "long",
+      "type": "double",
+      "value": 4,
+      "condition": {
+        "type": "property_equals",
+        "property": "powered",
+        "value": "true"
+      }
+    }
+  ],
+
+  "output": {
+    "type": "block_property",
+    "property": "delay",
+
+    "target": {
+      "offset": [0, 0, 0],
+      "relative_to_facing": false
+    },
+
+    "values": {
+      "short": 1,
+      "long": 4
+    }
+  }
+}

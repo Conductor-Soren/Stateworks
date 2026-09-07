@@ -1,0 +1,36 @@
+{
+  "id": "example:repeater_power",
+  "states": [
+    {
+      "name": "off",
+      "type": "boolean",
+      "condition": {
+        "type": "property_equals",
+        "property": "powered",
+        "value": "false"
+      }
+    },
+    {
+      "name": "on",
+      "type": "boolean",
+      "condition": {
+        "type": "property_equals",
+        "property": "powered",
+        "value": "true"
+      }
+    }
+  ],
+  "default": "off",
+  "transitions": [
+    {
+      "from": "off",
+      "to": "on",
+      "duration": 1000
+    },
+    {
+      "from": "on",
+      "to": "off",
+      "duration": 1000
+    }
+  ]
+}

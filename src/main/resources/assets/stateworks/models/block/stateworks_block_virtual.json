@@ -1,0 +1,6 @@
+{
+  "loader": "stateworks:virtual_state",
+  "off": "stateworks:block/stateworks_block_off",
+  "active": "stateworks:block/stateworks_block_active",
+  "active_transition": "stateworks:block/stateworks_block_active_transition"
+}

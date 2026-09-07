@@ -1,0 +1,20 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "casing": "stateworks:block/stateworks_casing",
+    "particle": "stateworks:block/stateworks_casing"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "down": {"texture": "#casing"},
+        "up": {"texture": "#casing"},
+        "south": {"texture": "#casing"},
+        "west": {"texture": "#casing"},
+        "east": {"texture": "#casing"}
+      }
+    }
+  ]
+}

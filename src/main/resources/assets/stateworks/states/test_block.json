@@ -1,0 +1,70 @@
+{
+  "id": "example:test_block",
+  "default": "off",
+  "states": [
+    {
+      "name": "off",
+      "type": "boolean",
+      "condition": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "block",
+            "block": "stateworks:stateworks_block"
+          },
+          {
+            "type": "property_equals",
+            "property": "lit",
+            "value": "false"
+          }
+        ]
+      },
+      "visual": "stateworks:block/stateworks_block_off"
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "condition": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "block",
+            "block": "stateworks:stateworks_block"
+          },
+          {
+            "type": "property_equals",
+            "property": "lit",
+            "value": "true"
+          }
+        ]
+      },
+      "visual": "stateworks:block/stateworks_block_active"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "off",
+      "to": "active",
+      "duration": 500
+    },
+    {
+      "from": "active",
+      "to": "off",
+      "duration": 500
+    }
+  ],
+  "signals": [
+    {
+      "name": "activity",
+      "type": "double",
+      "source": "property",
+      "property": "lit"
+    },
+    {
+      "name": "north_solid",
+      "type": "double",
+      "source": "neighbor_solid",
+      "direction": "north"
+    }
+  ]
+}
