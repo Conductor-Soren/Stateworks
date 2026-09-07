@@ -123,7 +123,7 @@ public record StateDefinitionSet<T>(
                                 context
                         )
                 )
-                .mapToLong(StateTransitionDefinition::duration)
+                .mapToLong(transition -> transition.resolveDuration(context))
                 .findFirst()
                 .orElse(0L);
     }

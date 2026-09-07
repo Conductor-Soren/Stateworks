@@ -198,7 +198,7 @@ public final class StateMachine {
             tracker.update(
                     next,
                     currentTime,
-                    completion.duration()
+                    completion.resolveDuration(context)
             );
 
             if (!tracker.isComplete(

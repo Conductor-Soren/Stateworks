@@ -13,6 +13,7 @@ import com.stateworks.block.*;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import java.util.Map;
 
 import java.util.ArrayList;
@@ -534,6 +535,48 @@ public final class StateDefinitionParser {
         );
     }
 
+    private static TransitionDuration parseTransitionDuration(
+            JsonElement element
+    ) {
+        if (element == null || element.isJsonNull()) {
+            return TransitionDuration.fixed(0L);
+        }
+
+        if (element.isJsonPrimitive()) {
+            return TransitionDuration.fixed(
+                    element.getAsLong()
+            );
+        }
+
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException(
+                    "Transition duration must be a number or object"
+            );
+        }
+
+        JsonObject duration = element.getAsJsonObject();
+        String type = duration.has("type")
+                ? duration.get("type").getAsString()
+                : "fixed";
+
+        if (type.equals("fixed")) {
+            return TransitionDuration.fixed(
+                    duration.get("milliseconds").getAsLong()
+            );
+        }
+
+        if (type.equals("block_property")) {
+            return TransitionDuration.blockProperty(
+                    duration.get("property").getAsString(),
+                    duration.get("scale_ms").getAsLong()
+            );
+        }
+
+        throw new IllegalArgumentException(
+                "Unsupported transition duration type: " + type
+        );
+    }
+
     private static <T>
     List<StateTransitionDefinition<T>>
     parseTransitions(
@@ -565,9 +608,10 @@ public final class StateDefinitionParser {
                     transitionJson.get("to")
                             .getAsString();
 
-            long duration =
-                    transitionJson.get("duration")
-                            .getAsLong();
+            TransitionDuration duration =
+                    parseTransitionDuration(
+                            transitionJson.get("duration")
+                    );
 
             Condition condition =
                     context -> true;

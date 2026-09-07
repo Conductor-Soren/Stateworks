@@ -55,4 +55,33 @@ public final class StateContext {
     public boolean hasNeighbor(Direction direction) {
         return !isAir(direction);
     }
+
+    /**
+     * Returns a numeric block property value from the current block, when
+     * the property exists and its value is numeric.
+     */
+    public Number getNumericProperty(String propertyName) {
+        if (propertyName == null || propertyName.isBlank()) {
+            return null;
+        }
+
+        for (var property : state.getProperties()) {
+            if (!property.getName().equals(propertyName)) {
+                continue;
+            }
+
+            Object value = state.getValue(property);
+            if (value instanceof Number number) {
+                return number;
+            }
+
+            try {
+                return Double.parseDouble(String.valueOf(value));
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+
+        return null;
+    }
 }

@@ -28,7 +28,6 @@ import com.stateworks.client.model.VirtualStateBlockModel;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
-import net.neoforged.neoforge.client.resources.VanillaClientListeners;
 
 // This class only loads on the physical client.
 @Mod(
@@ -103,17 +102,6 @@ public class StateworksClient {
         event.addListener(
                 StateDefinitionLoader.ID,
                 StateDefinitionLoader.INSTANCE
-        );
-
-        /*
-         * State definitions provide visual model dependencies used by
-         * VirtualStateBlockModel. Model discovery runs as its own reload
-         * listener, so explicitly order our state-definition load before
-         * vanilla's model reload.
-         */
-        event.addDependency(
-                StateDefinitionLoader.ID,
-                VanillaClientListeners.MODELS
         );
     }
 

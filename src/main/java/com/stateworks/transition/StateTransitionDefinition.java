@@ -15,7 +15,7 @@ public record StateTransitionDefinition<T>(
         String from,
         String to,
         Condition condition,
-        long duration,
+        TransitionDuration duration,
         boolean onComplete
 ) {
 
@@ -27,6 +27,12 @@ public record StateTransitionDefinition<T>(
         return from.equals(currentState)
                 && to.equals(nextState)
                 && condition.evaluate(context);
+    }
+
+    public long resolveDuration(StateContext context) {
+        return duration == null
+                ? 0L
+                : duration.resolve(context);
     }
 
     public boolean appliesOnComplete(

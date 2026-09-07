@@ -63,7 +63,11 @@
     {
       "from": "off",
       "to": "activating",
-      "duration": 100
+      "duration": {
+        "type": "block_property",
+        "property": "delay",
+        "scale_ms": 100
+      }
     },
     {
       "from": "activating",
@@ -74,7 +78,11 @@
     {
       "from": "active",
       "to": "off",
-      "duration": 100
+      "duration": {
+        "type": "block_property",
+        "property": "delay",
+        "scale_ms": 100
+      }
     }
   ]
 }
