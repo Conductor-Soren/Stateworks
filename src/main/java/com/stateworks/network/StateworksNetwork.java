@@ -10,7 +10,6 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import com.stateworks.client.StateworksVisualStateManager;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;

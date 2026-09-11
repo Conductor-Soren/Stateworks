@@ -9,12 +9,13 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
-import com.stateworks.block.*;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.RepeaterBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -333,10 +334,24 @@ public final class StateworksVisualStateManager {
                 continue;
             }
 
-            if (!state.isTransitioning(currentTime)) {
+            if (state.isTransitioning(currentTime)) {
+                minecraft.levelRenderer.setBlocksDirty(
+                        key.position().getX(),
+                        key.position().getY(),
+                        key.position().getZ(),
+                        key.position().getX(),
+                        key.position().getY(),
+                        key.position().getZ()
+                );
                 continue;
             }
 
+            /*
+             * The four-frame visual transition has finished.  Dirty the block
+             * one final time so the renderer drops the transition frame and
+             * returns to Minecraft's normal blockstate model, then remove the
+             * completed visual state from the client cache.
+             */
             minecraft.levelRenderer.setBlocksDirty(
                     key.position().getX(),
                     key.position().getY(),
@@ -345,6 +360,8 @@ public final class StateworksVisualStateManager {
                     key.position().getY(),
                     key.position().getZ()
             );
+
+            STATES.remove(key, state);
         }
     }
 
@@ -399,6 +416,48 @@ public final class StateworksVisualStateManager {
                     && currentTime
                     < transitionStartTime
                     + transitionDuration;
+        }
+
+        /**
+         * Returns the visual transition state name used by resource-pack model
+         * mappings. For example, closed -> open becomes "opening", while
+         * open -> closed becomes "PoweringOff". Stateworks 1.0 only exposes
+         * hard-coded virtual transition names.
+         */
+        public String transitionStateName(BlockPos position) {
+            if (previousStateName == null
+                    || previousStateName.equals(stateName)) {
+                return null;
+            }
+
+            // Built-in visual transitions are deliberately fixed and hard-coded
+            // for Stateworks 1.0. Resource packs consume these names; they do
+            // not define the transitions themselves.
+            if ("example:repeater_power".equals(stateSetId)) {
+                Minecraft minecraft = Minecraft.getInstance();
+                if (minecraft.level != null && position != null) {
+                    BlockState blockState = minecraft.level.getBlockState(position);
+                    if (blockState.getBlock() instanceof RepeaterBlock) {
+                        int delay = blockState.getValue(RepeaterBlock.DELAY);
+                        if ("off".equals(previousStateName) && "active".equals(stateName)) {
+                            return "Powering_" + delay;
+                        }
+                        if ("active".equals(previousStateName) && "off".equals(stateName)) {
+                            return "PoweringOff_" + delay;
+                        }
+                    }
+                }
+            }
+            if ("cold".equals(previousStateName) && "hot".equals(stateName)
+                    && "example:furnace_heat".equals(stateSetId)) {
+                return "Heating";
+            }
+            if ("hot".equals(previousStateName) && "cold".equals(stateName)
+                    && "example:furnace_heat".equals(stateSetId)) {
+                return "Cooling";
+            }
+
+            return null;
         }
 
         public float getProgress(

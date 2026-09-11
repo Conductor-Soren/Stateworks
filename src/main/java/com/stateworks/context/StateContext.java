@@ -9,10 +9,8 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -40,21 +38,6 @@ public final class StateContext {
         return state;
     }
 
-    public BlockState getNeighbor(Direction direction) {
-        return level.getBlockState(pos.relative(direction));
-    }
-
-    public boolean isSolid(Direction direction) {
-        return getNeighbor(direction).isSolid();
-    }
-
-    public boolean isAir(Direction direction) {
-        return getNeighbor(direction).isAir();
-    }
-
-    public boolean hasNeighbor(Direction direction) {
-        return !isAir(direction);
-    }
 
     /**
      * Returns a numeric block property value from the current block, when

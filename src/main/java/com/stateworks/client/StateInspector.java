@@ -9,7 +9,6 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
-import com.stateworks.block.*;
 
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;

@@ -9,7 +9,6 @@ import com.stateworks.transition.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import java.util.function.Function;
 

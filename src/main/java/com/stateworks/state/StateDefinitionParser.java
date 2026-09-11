@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -27,39 +26,25 @@ public final class StateDefinitionParser {
     public static StateDefinition<?> parse(
             JsonObject json
     ) {
-        String id =
-                json.get("id").getAsString();
-
-        String type =
-                json.get("type").getAsString();
+        String id = json.get("id").getAsString();
+        String type = json.get("type").getAsString();
 
         if (!type.equals("boolean")) {
-            throw new IllegalArgumentException(
-                    "Unsupported Stateworks state type: "
-                            + type
-            );
+            throw new IllegalArgumentException("Unsupported Stateworks state type: " + type);
         }
 
-        Condition condition =
-                ConditionParser.parse(
-                        json.getAsJsonObject(
-                                "condition"
-                        )
-                );
+        Condition condition = ConditionParser.parse(json.getAsJsonObject("condition"));
+        String visualModel = null;
 
-        String visualModel =
-                json.has("visual")
-                        ? json.get("visual").getAsString()
-                        : null;
+        if (json.has("visual")) {
+            JsonElement visual = json.get("visual");
+            visualModel = visual.isJsonPrimitive()
+                    ? visual.getAsString()
+                    : visual.getAsJsonObject().get("model").getAsString();
+        }
 
-        return new StateDefinition<>(
-                id,
-                condition::evaluate,
-                condition,
-                visualModel
-        );
+        return new StateDefinition<>(id, condition::evaluate, condition, visualModel);
     }
-
 
     public static SignalDefinitionSet parseSignals(
             JsonObject json
@@ -97,19 +82,6 @@ public final class StateDefinitionParser {
                     String property = signalJson.get("property").getAsString();
                     signals.add(new SignalDefinition(name, context ->
                             readPropertySignal(context, property)
-                    ));
-                }
-                case "neighbor_solid" -> {
-                    String direction = signalJson.get("direction").getAsString();
-                    net.minecraft.core.Direction parsed =
-                            net.minecraft.core.Direction.byName(direction);
-                    if (parsed == null) {
-                        throw new IllegalArgumentException(
-                                "Unknown Stateworks signal direction: " + direction
-                        );
-                    }
-                    signals.add(new SignalDefinition(name, context ->
-                            context.isSolid(parsed) ? 1.0D : 0.0D
                     ));
                 }
                 default -> throw new IllegalArgumentException(
@@ -234,10 +206,13 @@ public final class StateDefinitionParser {
                             )
                     );
 
-            String visualModel =
-                    stateJson.has("visual")
-                            ? stateJson.get("visual").getAsString()
-                            : null;
+            String visualModel = null;
+            if (stateJson.has("visual")) {
+                JsonElement visual = stateJson.get("visual");
+                visualModel = visual.isJsonPrimitive()
+                        ? visual.getAsString()
+                        : visual.getAsJsonObject().get("model").getAsString();
+            }
 
             states.add(
                     new StateDefinition<>(
@@ -323,10 +298,13 @@ public final class StateDefinitionParser {
                             )
                     );
 
-            String visualModel =
-                    stateJson.has("visual")
-                            ? stateJson.get("visual").getAsString()
-                            : null;
+            String visualModel = null;
+            if (stateJson.has("visual")) {
+                JsonElement visual = stateJson.get("visual");
+                visualModel = visual.isJsonPrimitive()
+                        ? visual.getAsString()
+                        : visual.getAsJsonObject().get("model").getAsString();
+            }
 
             states.add(
                     new StateDefinition<>(

@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -61,6 +60,30 @@ public final class StateMachineManager {
         }
 
         return entry.machine();
+    }
+
+    /**
+     * Updates the Stateworks machine for a block by automatically selecting
+     * the state set whose conditions apply to that block.
+     */
+    public StateMachine update(
+            Level level,
+            BlockPos pos,
+            long currentTime
+    ) {
+        if (level == null || pos == null) {
+            return null;
+        }
+
+        StateContext context = new StateContext(level, pos);
+        String stateSetId = StateRegistry.INSTANCE.findApplicableSet(context);
+
+        if (stateSetId == null) {
+            machines.remove(new MachineKey(level.dimension(), pos.immutable()));
+            return null;
+        }
+
+        return update(level, pos, stateSetId, currentTime);
     }
 
     public StateMachine update(
@@ -303,7 +326,14 @@ public final class StateMachineManager {
          */
         boolean transitioning = machine.isTransitioning(currentTime);
 
-        if (!stateChanged && (!signalsChanged || transitioning)) {
+        /*
+         * A visual transition is only a few server ticks long.  Keep sending
+         * its authoritative timing while it is active so a client that
+         * receives the first packet late still receives a fresh transition
+         * payload with the correct elapsed time.  The client reconstructs the
+         * original transition start time from transitionElapsed.
+         */
+        if (!stateChanged && !transitioning && !signalsChanged) {
             return;
         }
 

@@ -13,21 +13,14 @@ import com.stateworks.client.*;
 
 
 import com.mojang.logging.LogUtils;
-import com.stateworks.block.StateworksTestBlock;
 import com.stateworks.network.StateworksNetwork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -42,9 +35,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.RepeaterBlock;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
+import net.minecraft.world.level.block.FurnaceBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 
@@ -55,11 +46,6 @@ public class Stateworks {
 
     public static final String MODID = "stateworks";
 
-    private static final String TEST_STATE =
-            "example:repeater_power";
-
-    private static final String TEST_BLOCK_STATE =
-            "example:test_block";
 
     private static final StateMachineManager STATE_MACHINES =
             new StateMachineManager();
@@ -72,62 +58,6 @@ public class Stateworks {
 
     public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(MODID);
-
-    public static final DeferredRegister.Items ITEMS =
-            DeferredRegister.createItems(MODID);
-
-    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
-            DeferredRegister.create(
-                    Registries.CREATIVE_MODE_TAB,
-                    MODID
-            );
-
-    /*
-     * The block must be registered through registerBlock().
-     *
-     * NeoForge 26.1 requires the block's ResourceKey to be
-     * assigned to BlockBehaviour.Properties before the Block
-     * constructor runs. registerBlock() handles that for us.
-     */
-    public static final DeferredBlock<StateworksTestBlock> STATEWORKS_BLOCK =
-            BLOCKS.registerBlock(
-                    "stateworks_block",
-                    StateworksTestBlock::new,
-                    () -> BlockBehaviour.Properties.of()
-                            .mapColor(MapColor.STONE)
-            );
-
-    public static final DeferredItem<BlockItem> STATEWORKS_BLOCK_ITEM =
-            ITEMS.registerSimpleBlockItem(
-                    "stateworks_block",
-                    STATEWORKS_BLOCK
-            );
-
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB =
-            CREATIVE_MODE_TABS.register(
-                    "example_tab",
-                    () -> CreativeModeTab.builder()
-                            .title(
-                                    Component.translatable(
-                                            "itemGroup.stateworks"
-                                    )
-                            )
-                            .withTabsBefore(
-                                    CreativeModeTabs.COMBAT
-                            )
-                            .icon(
-                                    () -> STATEWORKS_BLOCK_ITEM
-                                            .get()
-                                            .getDefaultInstance()
-                            )
-                            .displayItems(
-                                    (parameters, output) ->
-                                            output.accept(
-                                                    STATEWORKS_BLOCK_ITEM
-                                            )
-                            )
-                            .build()
-            );
 
     public Stateworks(
             IEventBus modEventBus,
@@ -151,17 +81,11 @@ public class Stateworks {
         );
 
         BLOCKS.register(modEventBus);
-        ITEMS.register(modEventBus);
-        CREATIVE_MODE_TABS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
 
         BuiltinConditions.register();
-
-        modEventBus.addListener(
-                this::addCreative
-        );
-
+        BuiltinStateSets.register();
         modContainer.registerConfig(
                 ModConfig.Type.COMMON,
                 Config.SPEC
@@ -198,19 +122,6 @@ public class Stateworks {
                                 item
                         )
         );
-    }
-
-    private void addCreative(
-            BuildCreativeModeTabContentsEvent event
-    ) {
-
-        if (event.getTabKey()
-                == CreativeModeTabs.BUILDING_BLOCKS) {
-
-            event.accept(
-                    STATEWORKS_BLOCK_ITEM
-            );
-        }
     }
 
     @SubscribeEvent
@@ -255,9 +166,7 @@ public class Stateworks {
             return;
         }
 
-        if (event.getPlacedBlock().getBlock() instanceof RepeaterBlock) {
-            trackRepeater(level, event.getPos());
-        }
+        trackBlock(level, event.getPos());
     }
 
     @SubscribeEvent
@@ -269,15 +178,10 @@ public class Stateworks {
         // The event identifies the block whose neighbors are about to be
         // notified. Any repeater on those notified positions may have had
         // its input changed, so make sure Stateworks is watching it.
-        if (event.getState().getBlock() instanceof RepeaterBlock) {
-            trackRepeater(level, event.getPos());
-        }
+        trackBlock(level, event.getPos());
 
         for (Direction direction : event.getNotifiedSides()) {
-            BlockPos neighbor = event.getPos().relative(direction);
-            if (level.getBlockState(neighbor).getBlock() instanceof RepeaterBlock) {
-                trackRepeater(level, neighbor);
-            }
+            trackBlock(level, event.getPos().relative(direction));
         }
     }
 
@@ -288,22 +192,17 @@ public class Stateworks {
      * StateRegistry.applies(...) becomes false because the repeater is gone.
      */
 
-    private static void trackRepeater(
+    private static void trackBlock(
             net.minecraft.world.level.Level level,
             BlockPos pos
     ) {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-
-        if (!(level.getBlockState(pos).getBlock() instanceof RepeaterBlock)) {
+        if (level == null || pos == null || level.isClientSide()) {
             return;
         }
 
         STATE_MACHINES.update(
                 level,
                 pos,
-                TEST_STATE,
                 System.currentTimeMillis()
         );
     }
@@ -319,7 +218,6 @@ public class Stateworks {
         STATE_MACHINES.update(
                 level,
                 pos,
-                TEST_BLOCK_STATE,
                 System.currentTimeMillis()
         );
     }
@@ -360,7 +258,6 @@ public class Stateworks {
                 STATE_MACHINES.update(
                         minecraft.level,
                         pos,
-                        TEST_BLOCK_STATE,
                         currentTime
                 );
 
@@ -512,34 +409,8 @@ public class Stateworks {
 
         System.out.println(
                 "Block: "
-                        + context
-                        .getBlockState()
-                        .getBlock()
+                        + context.getBlockState().getBlock()
         );
-
-        for (Direction direction :
-                Direction.values()) {
-
-            System.out.println(
-                    direction.getName()
-                            + ": "
-                            + context
-                            .getNeighbor(direction)
-                            .getBlock()
-                            + " | neighbor="
-                            + context.hasNeighbor(
-                            direction
-                    )
-                            + " | solid="
-                            + context.isSolid(
-                            direction
-                    )
-                            + " | air="
-                            + context.isAir(
-                            direction
-                    )
-            );
-        }
 
         System.out.println(
                 "========================================"

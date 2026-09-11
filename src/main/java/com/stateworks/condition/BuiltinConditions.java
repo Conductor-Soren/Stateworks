@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import com.google.gson.JsonArray;
 import net.minecraft.core.Direction;
@@ -77,47 +76,6 @@ public final class BuiltinConditions {
             return new BlockTagCondition(tag);
         });
 
-        ConditionParser.register("neighbor_tag", json -> {
-
-            Direction direction = Direction.byName(
-                    json.get("direction").getAsString()
-            );
-
-            if (direction == null) {
-                throw new IllegalArgumentException(
-                        "Invalid direction in neighbor_tag condition"
-                );
-            }
-
-            Identifier tagId = Identifier.parse(
-                    json.get("tag").getAsString()
-            );
-
-            TagKey<Block> tag = TagKey.create(
-                    Registries.BLOCK,
-                    tagId
-            );
-
-            return new NeighborTagCondition(
-                    direction,
-                    tag
-            );
-        });
-
-        ConditionParser.register("neighbor_solid", json -> {
-
-            Direction direction = Direction.byName(
-                    json.get("direction").getAsString()
-            );
-
-            if (direction == null) {
-                throw new IllegalArgumentException(
-                        "Invalid direction in neighbor_solid condition"
-                );
-            }
-
-            return new NeighborSolidCondition(direction);
-        });
 
         ConditionParser.register("block", json -> {
 
@@ -134,30 +92,6 @@ public final class BuiltinConditions {
             return new BlockCondition(block);
         });
 
-        ConditionParser.register("neighbor_block", json -> {
-
-            Direction direction = Direction.byName(
-                    json.get("direction").getAsString()
-            );
-
-            if (direction == null) {
-                throw new IllegalArgumentException(
-                        "Invalid direction in neighbor_block condition"
-                );
-            }
-
-            Identifier blockId = Identifier.parse(
-                    json.get("block").getAsString()
-            );
-
-            Block block = BuiltInRegistries.BLOCK.get(blockId)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Unknown block in neighbor_block condition: " + blockId
-                    ))
-                    .value();
-
-            return new NeighborBlockCondition(direction, block);
-        });
 
         ConditionParser.register("all", json -> {
 

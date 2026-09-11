@@ -1,17 +1,54 @@
-# Stateworks — Phase 1 Clean Source
+# Stateworks
 
-This archive is based on the exact Stateworks project upload supplied for the Phase 1 cleanup.
+Stateworks is a Minecraft mod framework for smooth visual transitions between block states.
 
-## Cleanup
-- Removed stale root-level Java source files left behind by the package refactor.
-- Removed duplicate `src2` and `srcfull` source snapshots.
-- Removed generated/build/editor artifacts from the distributable source archive.
-- Preserved the canonical Phase 1 package structure under `src/main/java/com/stateworks/`.
+**Status: Alpha 1** — an early testing release. The core systems are being actively tested and APIs may change.
 
-## Compile fix
-The package separation had a few imports/references that still pointed at the old root package:
-- `Stateworks` is explicitly imported where client/network classes use it.
-- `VisualStatePayload` remains in `com.stateworks.network`.
-- `SignalInterpolator` is referenced from its new `com.stateworks.signal` package.
+## Alpha 1 systems
 
-No runtime behavior was intentionally changed by this fix.
+1. Repeater
+2. Furnace
+3. Redstone Dust
+4. Crops
+5. Doors
+6. Trapdoors
+7. Buttons
+8. Saplings
+9. Lever
+10. Redstone Torch
+
+These are transition systems; block variants within a family do not each count as a separate system.
+
+## Highlights
+
+- Boolean and property-stage transitions
+- Minecraft-tick-based transition timing
+- Variable animation frame counts
+- Reusable multi-block registration helpers
+- Special handling for timing-sensitive systems
+- Context-aware visual states for blocks with additional properties
+
+## Documentation
+
+- [Adding Blocks](docs/ADDING_BLOCKS.md)
+- [Animation Format](docs/ANIMATION_FORMAT.md)
+- [State System](docs/STATE_SYSTEM.md)
+- [Example Pack](example-pack/README.md)
+
+## Building
+
+```powershell
+.\gradlew clean build
+```
+
+Development client:
+
+```powershell
+.\gradlew runclient
+```
+
+## Alpha 1 goal
+
+The first Alpha is focused on validating the transition engine: state detection, timing, frame playback, block-family registration, and preservation of relevant vanilla properties.
+
+See `CHANGELOG.md` for the Alpha 1 scope.

@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

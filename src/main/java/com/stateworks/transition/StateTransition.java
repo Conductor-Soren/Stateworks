@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 public record StateTransition<T>(
         VirtualState<T> previous,

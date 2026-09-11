@@ -9,7 +9,6 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import java.util.List;
 import java.util.Map;

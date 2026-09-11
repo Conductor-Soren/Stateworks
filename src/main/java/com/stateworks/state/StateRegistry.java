@@ -9,7 +9,6 @@ import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,6 +68,21 @@ public final class StateRegistry {
     ) {
         StateDefinitionSet<?> set = sets.get(stateSetId);
         return set != null && set.applies(context);
+    }
+
+    /**
+     * Finds the first registered Stateworks state set that applies to the
+     * supplied block context. Built-in and data-driven sets can therefore be
+     * selected from the block itself instead of callers hard-coding a set ID.
+     */
+    public String findApplicableSet(
+            StateContext context
+    ) {
+        return sets.entrySet().stream()
+                .filter(entry -> entry.getValue().applies(context))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
     }
 
     public void registerSignalSet(

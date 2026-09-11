@@ -1,19 +1,7 @@
 package com.stateworks.client;
 
 import com.stateworks.Stateworks;
-import com.stateworks.visual.*;
-
-import com.stateworks.context.*;
-import com.stateworks.condition.*;
-import com.stateworks.state.*;
-import com.stateworks.transition.*;
-import com.stateworks.signal.*;
-import com.stateworks.output.*;
-import com.stateworks.network.*;
-import com.stateworks.block.*;
-
 import com.stateworks.network.StateworksNetwork;
-import com.stateworks.client.StateworksVisualStateManager;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -21,10 +9,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterBlockStateModels;
-import com.stateworks.client.model.VirtualStateBlockModel;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -57,15 +44,17 @@ public class StateworksClient {
         );
 
         modEventBus.addListener(
-                StateworksClient::onRegisterReloadListeners
-        );
-
-        modEventBus.addListener(
                 StateworksClient::registerClientPayloads
         );
 
         modEventBus.addListener(
                 StateworksClient::registerBlockStateModels
+        );
+        modEventBus.addListener(
+                StateworksClient::registerStandaloneModels
+        );
+        modEventBus.addListener(
+                StateworksClient::modifyBakingResult
         );
 
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
@@ -95,23 +84,23 @@ public class StateworksClient {
         StateworksVisualStateManager.tick();
     }
 
-    private static void onRegisterReloadListeners(
-            AddClientReloadListenersEvent event
-    ) {
-
-        event.addListener(
-                StateDefinitionLoader.ID,
-                StateDefinitionLoader.INSTANCE
-        );
-    }
-
     private static void registerBlockStateModels(
             RegisterBlockStateModels event
     ) {
-        event.registerModel(
-                VirtualStateBlockModel.Unbaked.ID,
-                VirtualStateBlockModel.Unbaked.CODEC
-        );
+        // Stateworks no longer requires a custom blockstate type for vanilla blocks.
+    }
+
+    private static void registerStandaloneModels(ModelEvent.RegisterStandalone event) {
+        if (Minecraft.getInstance().getResourceManager() != null) {
+            StateworksVisualOverlay.registerStandaloneModels(
+                    event,
+                    Minecraft.getInstance().getResourceManager()
+            );
+        }
+    }
+
+    private static void modifyBakingResult(ModelEvent.ModifyBakingResult event) {
+        StateworksVisualOverlay.modifyBakingResult(event);
     }
 
     private static void registerClientPayloads(

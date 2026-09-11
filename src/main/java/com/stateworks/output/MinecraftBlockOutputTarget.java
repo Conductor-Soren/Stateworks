@@ -9,7 +9,6 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.network.*;
 import com.stateworks.client.*;
-import com.stateworks.block.*;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;

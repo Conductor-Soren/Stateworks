@@ -10,7 +10,6 @@ import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.output.*;
 import com.stateworks.network.*;
-import com.stateworks.block.*;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;

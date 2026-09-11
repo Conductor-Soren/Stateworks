@@ -40,6 +40,19 @@ public record TransitionDuration(
         return new TransitionDuration(0L, property, scaleMillis);
     }
 
+    /** Creates a fixed duration in Minecraft ticks (1 tick = 50 ms). */
+    public static TransitionDuration fixedTicks(long ticks) {
+        return fixed(Math.max(0L, ticks) * 50L);
+    }
+
+    /** Creates a duration based on a numeric property measured in ticks. */
+    public static TransitionDuration blockPropertyTicks(
+            String property,
+            long scaleTicks
+    ) {
+        return blockProperty(property, Math.max(0L, scaleTicks) * 50L);
+    }
+
     public long resolve(StateContext context) {
         if (property == null) {
             return Math.max(0L, fixedMillis);
