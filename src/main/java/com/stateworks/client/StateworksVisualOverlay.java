@@ -106,7 +106,7 @@ public final class StateworksVisualOverlay {
 
                     List<List<StandaloneModelKey<BlockStateModel>>> variantKeys = new ArrayList<>();
                     for (VisualVariant variant : variants) {
-                        variantKeys.add(registerFrameModels(event, variant.frameIds()));
+                        variantKeys.add(registerFrameModels(event, variant.frameIds(), block));
                     }
                     stateKeys.put(stateEntry.getKey(), List.copyOf(variantKeys));
                 }
@@ -320,7 +320,8 @@ public final class StateworksVisualOverlay {
      */
     private static List<StandaloneModelKey<BlockStateModel>> registerFrameModels(
             ModelEvent.RegisterStandalone event,
-            List<Identifier> frameIds
+            List<Identifier> frameIds,
+            Identifier blockId
     ) {
         Direction[] directions = HORIZONTAL_DIRECTIONS;
         List<StandaloneModelKey<BlockStateModel>> keys =
@@ -338,7 +339,10 @@ public final class StateworksVisualOverlay {
                 keys.add(key);
                 event.register(key, SimpleUnbakedStandaloneModel.blockStateModel(
                         frameId,
-                        BlockModelRotation.get(rotationFor(direction))
+                        BlockModelRotation.get(rotationFor(
+                                direction,
+                                blockId
+                        ))
                 ));
             }
         }
@@ -346,12 +350,29 @@ public final class StateworksVisualOverlay {
         return List.copyOf(keys);
     }
 
-    private static OctahedralGroup rotationFor(Direction direction) {
+    private static OctahedralGroup rotationFor(
+            Direction direction,
+            Identifier blockId
+    ) {
         /*
-         * Match Minecraft's vanilla horizontal blockstate rotations.
-         * Repeater models use SOUTH as their unrotated/base orientation:
-         * SOUTH=0, WEST=90, NORTH=180, EAST=270.
+         * Repeater animation models are authored with SOUTH as their
+         * unrotated/base orientation. The Furnace animation models supplied
+         * by the example pack are authored with NORTH as their front.
          */
+        boolean northBase =
+                blockId.equals(Identifier.parse("minecraft:furnace"));
+
+        if (northBase) {
+            return switch (direction) {
+                case NORTH -> OctahedralGroup.IDENTITY;
+                case EAST -> OctahedralGroup.BLOCK_ROT_Y_90;
+                case SOUTH -> OctahedralGroup.BLOCK_ROT_Y_180;
+                case WEST -> OctahedralGroup.BLOCK_ROT_Y_270;
+                case UP -> OctahedralGroup.BLOCK_ROT_X_90;
+                case DOWN -> OctahedralGroup.BLOCK_ROT_X_270;
+            };
+        }
+
         return switch (direction) {
             case SOUTH -> OctahedralGroup.IDENTITY;
             case WEST -> OctahedralGroup.BLOCK_ROT_Y_90;

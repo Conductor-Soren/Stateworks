@@ -176,10 +176,18 @@ public class Stateworks {
         }
 
         /*
-         * No repeater POWERED handling and no edge-state bookkeeping.
-         * When a block changes and notifies its neighbors, a notified
-         * repeater immediately re-evaluates its input signal.
+         * The block that generated the notification may itself have changed
+         * state (for example a Furnace changing LIT). Track that block so
+         * ordinary Stateworks definitions can observe the new vanilla state
+         * through their normal evaluator.
+         *
+         * Repeaters are additionally tracked on their input side because
+         * their POWERED property intentionally changes later than the input
+         * signal. The repeater-specific edge logic remains entirely inside
+         * StateMachineManager.
          */
+        trackBlock(level, event.getPos());
+
         for (Direction direction : event.getNotifiedSides()) {
             BlockPos neighborPos = event.getPos().relative(direction);
 

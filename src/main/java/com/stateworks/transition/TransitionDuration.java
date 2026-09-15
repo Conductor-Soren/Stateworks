@@ -53,38 +53,6 @@ public record TransitionDuration(
         return blockProperty(property, Math.max(0L, scaleTicks) * 50L);
     }
 
-    /**
-     * Creates a duration based on a numeric block property with an additional
-     * fixed number of ticks. This is useful where the visual transition
-     * endpoint is one tick later than the vanilla property timing.
-     */
-    public static TransitionDuration blockPropertyTicksPlus(
-            String property,
-            long scaleTicks,
-            long extraTicks
-    ) {
-        return new TransitionDuration(
-                Math.max(0L, extraTicks) * 50L,
-                property,
-                Math.max(0L, scaleTicks) * 50L
-        );
-    }
-
-    /**
-     * Repeater timing used by the built-in repeater presentation.
-     *
-     * Vanilla repeater delay values are 1..4. The first two values already
-     * line up with Stateworks' presentation timing; for the longer delays,
-     * use the repeater's full two-ticks-per-delay timing.
-     */
-    public static TransitionDuration repeaterTicks(String property) {
-        return new TransitionDuration(
-                0L,
-                property + "|repeaterTicks",
-                50L
-        );
-    }
-
     public long resolve(StateContext context) {
         if (property == null) {
             return Math.max(0L, fixedMillis);
@@ -92,28 +60,6 @@ public record TransitionDuration(
 
         if (context == null) {
             return 0L;
-        }
-
-        if (property.endsWith("|repeaterTicks")) {
-            String propertyName =
-                    property.substring(0, property.length() - "|repeaterTicks".length());
-
-            Number value = context.getNumericProperty(propertyName);
-            if (value == null) {
-                return 0L;
-            }
-
-            int delay = Math.max(1, value.intValue());
-
-            /*
-             * Repeater delay values map directly to vanilla redstone ticks:
-             *   delay 1 -> 2 ticks
-             *   delay 2 -> 4 ticks
-             *   delay 3 -> 6 ticks
-             *   delay 4 -> 8 ticks
-             */
-            long ticks = delay * 2L;
-            return ticks * 50L;
         }
 
         Number value = context.getNumericProperty(property);

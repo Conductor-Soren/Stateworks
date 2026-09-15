@@ -73,6 +73,32 @@ public final class StateMachine {
 
         this.context = context;
 
+        /*
+         * An externally-triggered transition (for example a delayed repeater
+         * input or an explicitly observed block edge) owns the machine until
+         * its visual transition finishes. Do not immediately replace it with
+         * the ordinary block-state evaluation.
+         */
+        if (forcedTransitionPending) {
+            if (tracker.isTransitioning(currentTime)) {
+                return;
+            }
+            forcedTransitionPending = false;
+        }
+
+        /*
+         * Establish a silent baseline when this machine is first observed.
+         * If the first observation happens after a vanilla state change, the
+         * default state is still available as the previous endpoint, so the
+         * first real trigger can animate instead of being treated as an
+         * already-completed state.
+         */
+        if (tracker.currentState() == null) {
+            VirtualState<?> baseline =
+                    definitionSet().defaultState().evaluate(context);
+            tracker.update(baseline, currentTime, 0L);
+        }
+
         OutputDefinition outputDefinition =
                 definitionSet().output();
 
@@ -273,7 +299,7 @@ public final class StateMachine {
          * baseline. Do not emit a visual packet for that baseline.
          */
         if (current == null) {
-            current = definitions.evaluate(context);
+            current = definitions.defaultState().evaluate(context);
             tracker.update(current, currentTime, 0L);
         }
 

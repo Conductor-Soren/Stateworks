@@ -545,12 +545,12 @@ public final class BuiltinStateSets {
 
         StateTransitionDefinition<Boolean> powering = new StateTransitionDefinition<>(
                 "off", "active", context -> true,
-                TransitionDuration.repeaterTicks("delay"), false,
+                TransitionDuration.blockPropertyTicks("delay", 2L), false,
                 "Powering"
         );
         StateTransitionDefinition<Boolean> poweringOff = new StateTransitionDefinition<>(
                 "active", "off", context -> true,
-                TransitionDuration.repeaterTicks("delay"), false,
+                TransitionDuration.blockPropertyTicks("delay", 2L), false,
                 "PoweringOff"
         );
 
