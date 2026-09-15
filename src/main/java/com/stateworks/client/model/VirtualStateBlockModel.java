@@ -40,6 +40,7 @@ public final class VirtualStateBlockModel implements DynamicBlockStateModel {
         this.original = original;
         this.blockId = blockId;
         this.frames = Map.copyOf(frames);
+        System.out.println("[Stateworks MODEL] Created wrapper for " + blockId + " transitions=" + this.frames.keySet());
     }
 
     @Override
@@ -50,18 +51,31 @@ public final class VirtualStateBlockModel implements DynamicBlockStateModel {
             RandomSource random,
             List<BlockStateModelPart> parts
     ) {
+        System.out.println("[Stateworks MODEL] collectParts invoked block=" + blockId + " pos=" + pos + " state=" + state);
+
         var dimension = level instanceof net.minecraft.client.multiplayer.ClientLevel clientLevel
                 ? clientLevel.dimension()
                 : Minecraft.getInstance().level.dimension();
         var visual = StateworksVisualStateManager.get(dimension, pos);
         long now = System.currentTimeMillis();
 
-        if (visual == null || !visual.isTransitioning(now)) {
+        if (visual == null) {
+            original.collectParts(level, pos, state, random, parts);
+            return;
+        }
+
+        if (!visual.isTransitioning(now)) {
             original.collectParts(level, pos, state, random, parts);
             return;
         }
 
         String transitionName = visual.transitionStateName(pos);
+        System.out.println(
+                "[Stateworks TRACE] Render lookup: pos=" + pos
+                        + " transition=" + transitionName
+                        + " available=" + frames.keySet()
+        );
+
         List<StateworksVisualOverlay.VisualVariant> variants = frames.get(transitionName);
         if (variants == null || variants.isEmpty()) {
             original.collectParts(level, pos, state, random, parts);

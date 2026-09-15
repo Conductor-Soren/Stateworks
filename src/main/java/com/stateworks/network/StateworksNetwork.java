@@ -46,25 +46,31 @@ public final class StateworksNetwork {
                 (payload, context) ->
                         context.enqueueWork(() -> {
 
+                            System.out.println(
+                                    "[Stateworks TRACE] Client received payload: pos="
+                                            + payload.position()
+                                            + " set=" + payload.stateSetId()
+                                            + " state=" + payload.stateName()
+                                            + " previous=" + payload.previousStateName()
+                                            + " visual=" + payload.visualTransitionName()
+                                            + " elapsed=" + payload.transitionElapsed()
+                                            + " duration=" + payload.transitionDuration()
+                            );
+
                             StateworksVisualStateManager.set(
-                                    context.player()
+                            context.player()
                                             .level()
                                             .dimension(),
-
-                                    payload.position(),
-
-                                    payload.stateSetId(),
-
-                                    payload.stateName(),
-
-                                    payload.previousStateName(),
-
-                                    payload.transitionElapsed(),
-
-                                    payload.transitionDuration(),
-                                    payload.previousSignals(),
-                                    payload.signals()
-                            );
+                            payload.position(),
+                            payload.stateSetId(),
+                            payload.stateName(),
+                            payload.previousStateName(),
+                            payload.visualTransitionName(),
+                            payload.transitionElapsed(),
+                            payload.transitionDuration(),
+                            payload.previousSignals(),
+                            payload.signals()
+                        );
 
                             var minecraft =
                                     net.minecraft.client.Minecraft
@@ -72,7 +78,7 @@ public final class StateworksNetwork {
 
                             if (minecraft.levelRenderer != null) {
 
-                                minecraft.levelRenderer.setBlocksDirty(
+                                minecraft.levelExtractor.setBlocksDirty(
                                         payload.position().getX(),
                                         payload.position().getY(),
                                         payload.position().getZ(),

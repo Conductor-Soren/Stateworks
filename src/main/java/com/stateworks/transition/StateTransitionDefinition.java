@@ -15,8 +15,20 @@ public record StateTransitionDefinition<T>(
         String to,
         Condition condition,
         TransitionDuration duration,
-        boolean onComplete
+        boolean onComplete,
+        String visualName
 ) {
+
+    /** Backwards-compatible constructor for transitions without a visual animation. */
+    public StateTransitionDefinition(
+            String from,
+            String to,
+            Condition condition,
+            TransitionDuration duration,
+            boolean onComplete
+    ) {
+        this(from, to, condition, duration, onComplete, null);
+    }
 
     public boolean applies(
             String currentState,

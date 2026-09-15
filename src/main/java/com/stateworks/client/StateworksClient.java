@@ -100,6 +100,7 @@ public class StateworksClient {
     }
 
     private static void modifyBakingResult(ModelEvent.ModifyBakingResult event) {
+        Stateworks.LOGGER.info("[Stateworks MODEL] Client received ModifyBakingResult event");
         StateworksVisualOverlay.modifyBakingResult(event);
     }
 

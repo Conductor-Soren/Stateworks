@@ -22,6 +22,9 @@ public final class StateMachine {
             new StateOutput(this);
 
     private VirtualState<?> desiredState;
+    // True while an externally-triggered delayed-block transition is waiting
+    // for the vanilla block state to catch up.
+    private boolean forcedTransitionPending;
     private StateContext context;
 
     public StateMachine(String stateSetId) {
@@ -231,6 +234,67 @@ public final class StateMachine {
         return signalSet == null
                 ? java.util.Map.of()
                 : signalSet.evaluate(context);
+    }
+
+    /**
+     * Starts a transition immediately for an externally detected event.
+     *
+     * This is used for delayed vanilla blocks such as repeaters: the input
+     * signal changes now, while the block's POWERED property changes later.
+     * The normal evaluator must not wait for that delayed property.
+     */
+    public void forceTransition(
+            String stateName,
+            StateContext context,
+            long currentTime
+    ) {
+        if (context == null || stateName == null) {
+            return;
+        }
+
+        StateDefinitionSet<?> definitions = definitionSet();
+
+        if (!definitions.applies(context)) {
+            return;
+        }
+
+        VirtualState<?> next = definitions.evaluateNamedState(
+                stateName,
+                context
+        );
+
+        VirtualState<?> current = tracker.currentState();
+
+        this.context = context;
+
+        /*
+         * An event can arrive before this block has ever been tracked.
+         * Establish the normal evaluated state silently as the transition
+         * baseline. Do not emit a visual packet for that baseline.
+         */
+        if (current == null) {
+            current = definitions.evaluate(context);
+            tracker.update(current, currentTime, 0L);
+        }
+
+        if (current.name().equals(next.name())) {
+            return;
+        }
+
+        long duration = definitions.transitionDuration(
+                current,
+                next,
+                context
+        );
+
+        this.desiredState = next;
+        this.forcedTransitionPending = true;
+
+        tracker.update(
+                next,
+                currentTime,
+                duration
+        );
     }
 
     public void tick(long currentTime) {

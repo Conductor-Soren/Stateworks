@@ -105,6 +105,33 @@ public record StateDefinitionSet<T>(
         return resolve(context).evaluate(context);
     }
 
+    /**
+     * Returns the resource-pack visual transition name for a state change.
+     * A null result means the transition has no custom visual animation.
+     */
+    public String visualTransitionName(
+            VirtualState<?> previous,
+            VirtualState<?> next,
+            StateContext context
+    ) {
+        if (previous == null || next == null) {
+            return null;
+        }
+
+        return transitions.stream()
+                .filter(transition ->
+                        transition.applies(
+                                previous.name(),
+                                next.name(),
+                                context
+                        )
+                )
+                .map(StateTransitionDefinition::visualName)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
     public long transitionDuration(
             VirtualState<?> previous,
             VirtualState<?> next,

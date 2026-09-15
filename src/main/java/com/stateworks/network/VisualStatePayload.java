@@ -26,6 +26,7 @@ public record VisualStatePayload(
         String stateSetId,
         String stateName,
         String previousStateName,
+        String visualTransitionName,
         long transitionElapsed,
         long transitionDuration,
         Map<String, Double> previousSignals,
@@ -87,6 +88,12 @@ public record VisualStatePayload(
                                     payload.previousStateName()
                             ),
 
+                    OPTIONAL_STRING,
+                    payload ->
+                            Optional.ofNullable(
+                                    payload.visualTransitionName()
+                            ),
+
                     ByteBufCodecs.VAR_LONG,
                     VisualStatePayload::transitionElapsed,
 
@@ -104,6 +111,7 @@ public record VisualStatePayload(
                             stateSetId,
                             stateName,
                             previousStateName,
+                            visualTransitionName,
                             transitionElapsed,
                             transitionDuration,
                             previousSignals,
@@ -114,6 +122,7 @@ public record VisualStatePayload(
                                     stateSetId,
                                     stateName,
                                     previousStateName.orElse(null),
+                                    visualTransitionName.orElse(null),
                                     transitionElapsed,
                                     transitionDuration,
                                     previousSignals,

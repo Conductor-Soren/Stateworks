@@ -40,6 +40,7 @@ public final class StateworksVisualStateManager {
                 stateSetId,
                 stateName,
                 null,
+                null,
                 0L,
                 0L,
                 Map.of(),
@@ -53,11 +54,22 @@ public final class StateworksVisualStateManager {
             String stateSetId,
             String stateName,
             String previousStateName,
+            String visualTransitionName,
             long transitionElapsed,
             long transitionDuration,
             Map<String, Double> previousSignals,
             Map<String, Double> signals
     ) {
+        System.out.println(
+                "[Stateworks TRACE] VisualStateManager.set: pos=" + position
+                        + " set=" + stateSetId
+                        + " state=" + stateName
+                        + " previous=" + previousStateName
+                        + " visual=" + visualTransitionName
+                        + " elapsed=" + transitionElapsed
+                        + " duration=" + transitionDuration
+        );
+
         if (dimension == null) {
             throw new IllegalArgumentException(
                     "Stateworks visual dimension cannot be null"
@@ -112,6 +124,7 @@ public final class StateworksVisualStateManager {
                         stateSetId,
                         stateName,
                         previousStateName,
+                        visualTransitionName,
                         clientStartTime,
                         safeDuration,
                         previousSignals == null ? Map.of() : Map.copyOf(previousSignals),
@@ -335,7 +348,7 @@ public final class StateworksVisualStateManager {
             }
 
             if (state.isTransitioning(currentTime)) {
-                minecraft.levelRenderer.setBlocksDirty(
+                minecraft.levelExtractor.setBlocksDirty(
                         key.position().getX(),
                         key.position().getY(),
                         key.position().getZ(),
@@ -352,7 +365,7 @@ public final class StateworksVisualStateManager {
              * returns to Minecraft's normal blockstate model, then remove the
              * completed visual state from the client cache.
              */
-            minecraft.levelRenderer.setBlocksDirty(
+            minecraft.levelExtractor.setBlocksDirty(
                     key.position().getX(),
                     key.position().getY(),
                     key.position().getZ(),
@@ -390,6 +403,7 @@ public final class StateworksVisualStateManager {
             String stateSetId,
             String stateName,
             String previousStateName,
+            String visualTransitionName,
             long transitionStartTime,
             long transitionDuration,
             Map<String, Double> previousSignals,
@@ -425,39 +439,7 @@ public final class StateworksVisualStateManager {
          * hard-coded virtual transition names.
          */
         public String transitionStateName(BlockPos position) {
-            if (previousStateName == null
-                    || previousStateName.equals(stateName)) {
-                return null;
-            }
-
-            // Built-in visual transitions are deliberately fixed and hard-coded
-            // for Stateworks 1.0. Resource packs consume these names; they do
-            // not define the transitions themselves.
-            if ("example:repeater_power".equals(stateSetId)) {
-                Minecraft minecraft = Minecraft.getInstance();
-                if (minecraft.level != null && position != null) {
-                    BlockState blockState = minecraft.level.getBlockState(position);
-                    if (blockState.getBlock() instanceof RepeaterBlock) {
-                        int delay = blockState.getValue(RepeaterBlock.DELAY);
-                        if ("off".equals(previousStateName) && "active".equals(stateName)) {
-                            return "Powering_" + delay;
-                        }
-                        if ("active".equals(previousStateName) && "off".equals(stateName)) {
-                            return "PoweringOff_" + delay;
-                        }
-                    }
-                }
-            }
-            if ("cold".equals(previousStateName) && "hot".equals(stateName)
-                    && "example:furnace_heat".equals(stateSetId)) {
-                return "Heating";
-            }
-            if ("hot".equals(previousStateName) && "cold".equals(stateName)
-                    && "example:furnace_heat".equals(stateSetId)) {
-                return "Cooling";
-            }
-
-            return null;
+            return visualTransitionName;
         }
 
         public float getProgress(

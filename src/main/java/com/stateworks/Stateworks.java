@@ -175,13 +175,18 @@ public class Stateworks {
             return;
         }
 
-        // The event identifies the block whose neighbors are about to be
-        // notified. Any repeater on those notified positions may have had
-        // its input changed, so make sure Stateworks is watching it.
-        trackBlock(level, event.getPos());
-
+        /*
+         * No repeater POWERED handling and no edge-state bookkeeping.
+         * When a block changes and notifies its neighbors, a notified
+         * repeater immediately re-evaluates its input signal.
+         */
         for (Direction direction : event.getNotifiedSides()) {
-            trackBlock(level, event.getPos().relative(direction));
+            BlockPos neighborPos = event.getPos().relative(direction);
+
+            if (level.getBlockState(neighborPos).getBlock()
+                    == Blocks.REPEATER) {
+                trackBlock(level, neighborPos);
+            }
         }
     }
 

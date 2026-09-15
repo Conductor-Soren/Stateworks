@@ -1,5 +1,9 @@
 package com.stateworks.transition;
 
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.RepeaterBlock;
+
 import com.stateworks.visual.*;
 
 import com.stateworks.context.*;
@@ -179,8 +183,51 @@ public final class StateMachineManager {
                 continue;
             }
 
-            entry.machine().update(
-                    context,
+            /*
+             * Repeater input is detected from the actual input signal on every
+             * server tick. NeighborNotifyEvent is only a physics notification
+             * and cannot reliably tell us which redstone edge occurred.
+             */
+            if ("repeater_power".equals(entry.stateSetId())
+                    && context.getBlockState().getBlock() instanceof RepeaterBlock) {
+
+                BlockState repeaterState = context.getBlockState();
+                Direction facing =
+                        repeaterState.getValue(RepeaterBlock.FACING);
+
+                BlockPos inputPos =
+                        entry.pos().relative(facing.getOpposite());
+
+                boolean inputPowered =
+                        entry.level().getSignal(
+                                inputPos,
+                                facing
+                        ) > 0;
+
+                Boolean previous =
+                        entry.lastRepeaterInputPowered;
+
+                /*
+                 * A newly tracked repeater is treated as having had an OFF
+                 * input. This is important when the machine is created by the
+                 * same lever update that turned the input ON.
+                 */
+                if (previous == null) {
+                    previous = false;
+                }
+
+                if (!previous && inputPowered) {
+                    entry.machine().forceTransition(
+                            "active",
+                            context,
+                            currentTime
+                    );
+                }
+
+                entry.lastRepeaterInputPowered = inputPowered;
+            }
+
+            entry.machine().tick(
                     currentTime
             );
 
@@ -192,6 +239,41 @@ public final class StateMachineManager {
                     entry,
                     currentTime
             );
+        }
+    }
+
+    /**
+     * Starts a named visual transition immediately. Used by vanilla delayed
+     * blocks when their input changes before their block state changes.
+     */
+    public void forceTransition(
+            Level level,
+            BlockPos pos,
+            String stateSetId,
+            String stateName,
+            long currentTime
+    ) {
+        if (level == null || pos == null || stateSetId == null || stateName == null) {
+            return;
+        }
+
+        StateMachine machine = getOrCreate(level, pos, stateSetId);
+        StateContext context = new StateContext(level, pos);
+
+        machine.forceTransition(
+                stateName,
+                context,
+                currentTime
+        );
+
+        machine.output().apply(currentTime);
+
+        MachineEntry entry = machines.get(
+                new MachineKey(level.dimension(), pos.immutable())
+        );
+
+        if (entry != null) {
+            updateVisualState(entry, currentTime);
         }
     }
 
@@ -230,6 +312,12 @@ public final class StateMachineManager {
 
         private String lastVisualState;
         private Map<String, Double> lastSignals = Map.of();
+
+        /*
+         * Repeater input edge tracking is independent of the repeater's
+         * delayed POWERED property. null means this is the first observation.
+         */
+        private Boolean lastRepeaterInputPowered;
 
         private MachineEntry(
                 Level level,
@@ -343,7 +431,15 @@ public final class StateMachineManager {
         StateTransition transition =
                 machine.transition();
 
+        System.out.println(
+                "[Stateworks TRACE] Visual sync: pos=" + entry.pos()
+                        + " set=" + entry.stateSetId()
+                        + " state=" + stateName
+                        + " transitioning=" + transitioning
+        );
+
         String previousStateName = null;
+        String visualTransitionName = null;
         long transitionElapsed = 0L;
         long transitionDuration = 0L;
 
@@ -356,6 +452,39 @@ public final class StateMachineManager {
 
             transitionDuration =
                     transition.duration();
+
+            StateDefinitionSet<?> definitionSet =
+                    StateRegistry.INSTANCE.getSet(entry.stateSetId());
+
+            System.out.println(
+                    "[Stateworks TRACE] Transition detected: "
+                            + previousStateName + " -> "
+                            + transition.next().name()
+                            + " duration=" + transitionDuration
+                            + " set=" + entry.stateSetId()
+            );
+
+            if (definitionSet != null) {
+                StateContext visualContext =
+                        new StateContext(
+                                entry.level(),
+                                entry.pos()
+                        );
+
+                visualTransitionName =
+                        definitionSet.visualTransitionName(
+                                transition.previous(),
+                                transition.next(),
+                                visualContext
+                        );
+
+                System.out.println(
+                        "[Stateworks TRACE] Resolved visual transition: "
+                                + (visualTransitionName != null
+                                ? visualTransitionName
+                                : "<NONE>")
+                );
+            }
 
             transitionElapsed =
                     Math.max(
@@ -376,12 +505,21 @@ public final class StateMachineManager {
         );
         entry.setLastSignals(signals);
 
+        System.out.println(
+                "[Stateworks TRACE] Sending payload: state=" + stateName
+                        + " previous=" + previousStateName
+                        + " visual=" + visualTransitionName
+                        + " elapsed=" + transitionElapsed
+                        + " duration=" + transitionDuration
+        );
+
         VisualStatePayload payload =
                 new VisualStatePayload(
                         entry.pos(),
                         entry.stateSetId(),
                         stateName,
                         previousStateName,
+                        visualTransitionName,
                         transitionElapsed,
                         transitionDuration,
                         previousSignals,

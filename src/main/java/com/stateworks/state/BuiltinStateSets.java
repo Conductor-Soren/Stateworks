@@ -1,13 +1,19 @@
 package com.stateworks.state;
 
+import net.minecraft.world.level.block.RedStoneWireBlock;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
 import com.stateworks.condition.Condition;
 import com.stateworks.transition.StateTransitionDefinition;
 import com.stateworks.transition.TransitionDuration;
 import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.BambooLeaves;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -23,9 +29,15 @@ public final class BuiltinStateSets {
     public static void register() {
         registerRepeater(Blocks.REPEATER);
         registerRedstoneDust(REDSTONE_POWER, Blocks.REDSTONE_WIRE);
-        registerBooleanBlock(
-                FURNACE_HEAT, Blocks.FURNACE, FurnaceBlock.LIT,
-                "cold", "hot", "Heating", "Cooling", 4L
+
+        /* Furnaces */
+        registerBooleanBlocks(
+                "",
+                FurnaceBlock.LIT,
+                "cold", "hot", "Heating", "Cooling", 4L,
+                Blocks.FURNACE,
+                Blocks.BLAST_FURNACE,
+                Blocks.SMOKER
         );
 
         /* Buttons */
@@ -83,15 +95,13 @@ public final class BuiltinStateSets {
                 Blocks.BAMBOO_DOOR,
                 Blocks.CRIMSON_DOOR,
                 Blocks.WARPED_DOOR,
-                Blocks.IRON_DOOR,
-                Blocks.COPPER_DOOR,
-                Blocks.EXPOSED_COPPER_DOOR,
-                Blocks.WEATHERED_COPPER_DOOR,
-                Blocks.OXIDIZED_COPPER_DOOR,
-                Blocks.WAXED_COPPER_DOOR,
-                Blocks.WAXED_EXPOSED_COPPER_DOOR,
-                Blocks.WAXED_WEATHERED_COPPER_DOOR,
-                Blocks.WAXED_OXIDIZED_COPPER_DOOR
+                Blocks.IRON_DOOR
+        );
+        registerBooleanBlocks(
+                "",
+                DoorBlock.OPEN,
+                "open", "closed", "opening", "closing", 4L,
+                Blocks.COPPER_DOOR.asList().toArray(new Block[0])
         );
 
         /* TrapDoors */
@@ -111,15 +121,13 @@ public final class BuiltinStateSets {
                 Blocks.BAMBOO_TRAPDOOR,
                 Blocks.CRIMSON_TRAPDOOR,
                 Blocks.WARPED_TRAPDOOR,
-                Blocks.IRON_TRAPDOOR,
-                Blocks.COPPER_TRAPDOOR,
-                Blocks.EXPOSED_COPPER_TRAPDOOR,
-                Blocks.WEATHERED_COPPER_TRAPDOOR,
-                Blocks.OXIDIZED_COPPER_TRAPDOOR,
-                Blocks.WAXED_COPPER_TRAPDOOR,
-                Blocks.WAXED_EXPOSED_COPPER_TRAPDOOR,
-                Blocks.WAXED_WEATHERED_COPPER_TRAPDOOR,
-                Blocks.WAXED_OXIDIZED_COPPER_TRAPDOOR
+                Blocks.IRON_TRAPDOOR
+        );
+        registerBooleanBlocks(
+                "",
+                TrapDoorBlock.OPEN,
+                "open", "closed", "opening", "closing", 4L,
+                Blocks.COPPER_TRAPDOOR.asList().toArray(new Block[0])
         );
 
         /* Crops */
@@ -236,11 +244,13 @@ public final class BuiltinStateSets {
 
         StateTransitionDefinition<Boolean> onTransition = new StateTransitionDefinition<>(
                 offState, onState, context -> true,
-                TransitionDuration.fixedTicks(transitionTicks), false
+                TransitionDuration.fixedTicks(transitionTicks), false,
+                turningOnTransition
         );
         StateTransitionDefinition<Boolean> offTransition = new StateTransitionDefinition<>(
                 onState, offState, context -> true,
-                TransitionDuration.fixedTicks(transitionTicks), false
+                TransitionDuration.fixedTicks(transitionTicks), false,
+                turningOffTransition
         );
 
         StateRegistry.INSTANCE.registerSet(new StateDefinitionSet<>(
@@ -441,8 +451,8 @@ public final class BuiltinStateSets {
             Condition condition =
                     context -> applies.evaluate(context)
                             && context.getBlockState().getValue(
-                                    net.minecraft.world.level.block.RedStoneWireBlock.POWER
-                            ) == strength;
+                            net.minecraft.world.level.block.RedStoneWireBlock.POWER
+                    ) == strength;
 
             states.add(new StateDefinition<>(
                     "stage_" + strength,
@@ -481,21 +491,67 @@ public final class BuiltinStateSets {
      */
     public static void registerRepeater(Block repeater) {
         Condition applies = context -> context.getBlockState().getBlock() == repeater;
-        Condition offCondition = context -> applies.evaluate(context)
-                && !context.getBlockState().getValue(RepeaterBlock.POWERED);
-        Condition onCondition = context -> applies.evaluate(context)
-                && context.getBlockState().getValue(RepeaterBlock.POWERED);
+
+        /*
+         * A repeater's POWERED property changes only after vanilla's delay.
+         * Stateworks needs the visual transition to represent that delay, so
+         * the desired state must be based on the signal entering the repeater,
+         * not on the already-delayed POWERED property.
+         *
+         * FACING points from input -> output. Therefore the input block is on
+         * FACING.getOpposite(), and its signal enters the repeater along FACING.
+         */
+        Condition onCondition = context -> {
+            if (!applies.evaluate(context)) {
+                return false;
+            }
+
+            BlockState state = context.getBlockState();
+            Direction facing = state.getValue(RepeaterBlock.FACING);
+
+            /*
+             * FACING is the direction used by the repeater's redstone
+             * connection. The source we care about is the block on that side.
+             * Query that neighbor for the signal it sends back toward the
+             * repeater. POWERED is never consulted.
+             */
+            BlockPos sourcePos =
+                    context.getPos().relative(facing);
+
+            return context.getLevel().getSignal(
+                    sourcePos,
+                    facing.getOpposite()
+            ) > 0;
+        };
+
+        Condition offCondition = context -> {
+            if (!applies.evaluate(context)) {
+                return false;
+            }
+
+            BlockState state = context.getBlockState();
+            Direction facing = state.getValue(RepeaterBlock.FACING);
+            BlockPos sourcePos =
+                    context.getPos().relative(facing);
+
+            return context.getLevel().getSignal(
+                    sourcePos,
+                    facing.getOpposite()
+            ) <= 0;
+        };
 
         StateDefinition<Boolean> off = new StateDefinition<>("off", context -> false, offCondition, null);
         StateDefinition<Boolean> on = new StateDefinition<>("active", context -> true, onCondition, null);
 
         StateTransitionDefinition<Boolean> powering = new StateTransitionDefinition<>(
                 "off", "active", context -> true,
-                TransitionDuration.blockPropertyTicks("delay", 1L), false
+                TransitionDuration.repeaterTicks("delay"), false,
+                "Powering"
         );
         StateTransitionDefinition<Boolean> poweringOff = new StateTransitionDefinition<>(
                 "active", "off", context -> true,
-                TransitionDuration.blockPropertyTicks("delay", 1L), false
+                TransitionDuration.repeaterTicks("delay"), false,
+                "PoweringOff"
         );
 
         StateRegistry.INSTANCE.registerSet(new StateDefinitionSet<>(

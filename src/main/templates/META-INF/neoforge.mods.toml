@@ -11,7 +11,7 @@ displayName="${mod_name}"
 authors="Stateworks"
 
 # The Stateworks mod icon is stored at the root of the mod JAR.
-logoFile="icon.png"
+iconFile="icon.png"
 
 description='''
 Stateworks is a visual state-transition framework for Minecraft.
