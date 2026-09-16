@@ -1,6 +1,5 @@
 package com.stateworks.state;
 
-import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
@@ -21,16 +20,11 @@ import java.util.List;
 public final class BuiltinStateSets {
 
     public static final String REPEATER_POWER = "example:repeater_power";
-    public static final String FURNACE_HEAT = "example:furnace_heat";
-    public static final String REDSTONE_POWER = "example:redstone_power";
-
-    private BuiltinStateSets() {}
+private BuiltinStateSets() {}
 
     public static void register() {
         registerRepeater(Blocks.REPEATER);
-        registerRedstoneDust(REDSTONE_POWER, Blocks.REDSTONE_WIRE);
-
-        /* Furnaces */
+/* Furnaces */
         registerBooleanBlocks(
                 "",
                 FurnaceBlock.LIT,
@@ -38,6 +32,13 @@ public final class BuiltinStateSets {
                 Blocks.FURNACE,
                 Blocks.BLAST_FURNACE,
                 Blocks.SMOKER
+        );
+
+        registerBooleanBlock(
+                "example:jukebox",
+                Blocks.JUKEBOX,
+                JukeboxBlock.HAS_RECORD,
+                "empty", "inserted", "inserting", "ejecting"
         );
 
         /* Buttons */
@@ -179,6 +180,27 @@ public final class BuiltinStateSets {
             String onState,
             String turningOnTransition,
             String turningOffTransition,
+            Block... blocks
+    ) {
+        registerBooleanBlocks(
+                idSuffix,
+                property,
+                offState,
+                onState,
+                turningOnTransition,
+                turningOffTransition,
+                1L,
+                blocks
+        );
+    }
+
+    public static void registerBooleanBlocks(
+            String idSuffix,
+            BooleanProperty property,
+            String offState,
+            String onState,
+            String turningOnTransition,
+            String turningOffTransition,
             long transitionTicks,
             Block... blocks
     ) {
@@ -206,6 +228,23 @@ public final class BuiltinStateSets {
             IntegerProperty property,
             int minValue,
             int maxValue,
+            Block... blocks
+    ) {
+        registerPropertyStagesBlocks(
+                idSuffix,
+                property,
+                minValue,
+                maxValue,
+                1L,
+                blocks
+        );
+    }
+
+    public static void registerPropertyStagesBlocks(
+            String idSuffix,
+            IntegerProperty property,
+            int minValue,
+            int maxValue,
             long transitionTicks,
             Block... blocks
     ) {
@@ -220,6 +259,33 @@ public final class BuiltinStateSets {
                     transitionTicks
             );
         }
+    }
+
+    /**
+     * Registers a boolean block whose visual transition duration is supplied
+     * by the resource-pack animation JSON. The state machine still needs a
+     * minimal logical duration, but the visual system replaces it with the
+     * animation's summed per-frame durations when available.
+     */
+    public static void registerBooleanBlock(
+            String id,
+            Block block,
+            BooleanProperty property,
+            String offState,
+            String onState,
+            String turningOnTransition,
+            String turningOffTransition
+    ) {
+        registerBooleanBlock(
+                id,
+                block,
+                property,
+                offState,
+                onState,
+                turningOnTransition,
+                turningOffTransition,
+                1L
+        );
     }
 
     /** Registers a simple two-state block driven by a BooleanProperty. */
@@ -269,6 +335,23 @@ public final class BuiltinStateSets {
             Block block,
             IntegerProperty property,
             int minValue,
+            int maxValue
+    ) {
+        registerPropertyStages(
+                id,
+                block,
+                property,
+                minValue,
+                maxValue,
+                1L
+        );
+    }
+
+    public static void registerPropertyStages(
+            String id,
+            Block block,
+            IntegerProperty property,
+            int minValue,
             int maxValue,
             long transitionTicks
     ) {
@@ -298,11 +381,13 @@ public final class BuiltinStateSets {
 
             transitions.add(new StateTransitionDefinition<>(
                     current, next, context -> true,
-                    TransitionDuration.fixedTicks(transitionTicks), false
+                    TransitionDuration.fixedTicks(transitionTicks), false,
+                    current + "_to_" + next
             ));
             transitions.add(new StateTransitionDefinition<>(
                     next, current, context -> true,
-                    TransitionDuration.fixedTicks(transitionTicks), false
+                    TransitionDuration.fixedTicks(transitionTicks), false,
+                    next + "_to_" + current
             ));
         }
 
@@ -433,57 +518,7 @@ public final class BuiltinStateSets {
                 + "_stage_" + stage;
     }
 
-    /**
-     * Registers redstone dust POWER (0-15) as visual stages.
-     * Each adjacent strength change uses a quick 1-tick visual transition.
-     */
-    public static void registerRedstoneDust(String id, Block redstone) {
-        Condition applies =
-                context -> context.getBlockState().getBlock() == redstone;
-
-        List<StateDefinition<Integer>> states = new java.util.ArrayList<>();
-        List<StateTransitionDefinition<Integer>> transitions =
-                new java.util.ArrayList<>();
-
-        for (int power = 0; power <= 15; power++) {
-            final int strength = power;
-
-            Condition condition =
-                    context -> applies.evaluate(context)
-                            && context.getBlockState().getValue(
-                            net.minecraft.world.level.block.RedStoneWireBlock.POWER
-                    ) == strength;
-
-            states.add(new StateDefinition<>(
-                    "stage_" + strength,
-                    context -> strength,
-                    condition,
-                    null
-            ));
-        }
-
-        for (int power = 0; power < 15; power++) {
-            String current = "stage_" + power;
-            String next = "stage_" + (power + 1);
-
-            transitions.add(new StateTransitionDefinition<>(
-                    current, next, context -> true,
-                    TransitionDuration.fixedTicks(1L), false
-            ));
-            transitions.add(new StateTransitionDefinition<>(
-                    next, current, context -> true,
-                    TransitionDuration.fixedTicks(1L), false
-            ));
-        }
-
-        StateRegistry.INSTANCE.registerSet(new StateDefinitionSet<>(
-                id,
-                states,
-                states.get(0),
-                transitions,
-                null
-        ));
-    }
+    
 
     /**
      * Registers the repeater using its vanilla 1-4 tick DELAY property.

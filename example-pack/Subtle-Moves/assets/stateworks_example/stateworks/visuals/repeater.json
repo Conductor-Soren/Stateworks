@@ -1,0 +1,6 @@
+{
+  "block": "minecraft:repeater",
+  "states": {
+    "Powering": "stateworks_example:block/repeater/powering"
+  }
+}

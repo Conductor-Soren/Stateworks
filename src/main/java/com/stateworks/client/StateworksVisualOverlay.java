@@ -61,7 +61,27 @@ public final class StateworksVisualOverlay {
     private StateworksVisualOverlay() {
     }
 
+    public static long getTransitionDuration(String transitionName) {
+        if (transitionName == null) return 0L;
+        List<VisualVariant> variants = RESOURCE_TRANSITIONS.get(transitionName);
+        if (variants == null || variants.isEmpty()) return 0L;
+
+        // Only an explicit JSON "durations" array owns visual timing.
+        // Legacy animations must continue to use their registered logical
+        // transition duration.
+        long max = 0L;
+        boolean hasExplicitTiming = false;
+        for (VisualVariant variant : variants) {
+            if (variant.hasExplicitDurations()) {
+                hasExplicitTiming = true;
+                max = Math.max(max, variant.totalDuration());
+            }
+        }
+        return hasExplicitTiming ? max : 0L;
+    }
+
     public static void registerStandaloneModels(ModelEvent.RegisterStandalone event, ResourceManager resources) {
+        RESOURCE_TRANSITIONS.clear();
         MAPPINGS.clear();
         KEYS.clear();
 
@@ -103,6 +123,14 @@ public final class StateworksVisualOverlay {
                     }
 
                     stateVariants.put(stateEntry.getKey(), List.copyOf(variants));
+
+                    // Explicit state definitions (for example
+                    // "inserting": {"model": "...", "durations": [...]})
+                    // are also transition timing definitions. Keep their
+                    // per-frame durations available to the visual state
+                    // manager so the logical transition is not truncated to
+                    // the first frame / one tick.
+                    RESOURCE_TRANSITIONS.put(stateEntry.getKey(), List.copyOf(variants));
 
                     List<List<StandaloneModelKey<BlockStateModel>>> variantKeys = new ArrayList<>();
                     for (VisualVariant variant : variants) {
@@ -173,6 +201,32 @@ public final class StateworksVisualOverlay {
 
         }
 
+        // Explicit single-state format:
+        // {
+        //   "model": "namespace:block/path/base",
+        //   "durations": [1, 2, 1, ...]
+        // }
+        //
+        // The durations array contains one duration per discovered frame.
+        // It must be preserved as frame timing, not interpreted as a single
+        // transition duration.
+        if (object.has("model") && object.get("model").isJsonPrimitive()) {
+            Identifier base = Identifier.parse(object.get("model").getAsString());
+            List<Identifier> frames = discoverFrames(resources, base);
+            List<Long> durations = parseDurations(
+                    object.has("durations") ? object.get("durations") : null,
+                    frames.size()
+            );
+            if (!frames.isEmpty()) {
+                variants.add(new VisualVariant(
+                        Map.of(),
+                        frames,
+                        Map.of(),
+                        durations
+                ));
+            }
+        }
+
         // Backwards-compatible numbered format.
         for (var entry : object.entrySet()) {
             JsonElement value = entry.getValue();
@@ -204,7 +258,20 @@ public final class StateworksVisualOverlay {
                 } else if (variantObject.has("model") && variantObject.get("model").isJsonPrimitive()) {
                     frames = discoverFrames(resources, Identifier.parse(variantObject.get("model").getAsString()));
                 }
-                if (!frames.isEmpty()) variants.add(new VisualVariant(Map.copyOf(conditions), frames));
+
+                List<Long> durations = parseDurations(
+                        variantObject.has("durations") ? variantObject.get("durations") : null,
+                        frames.size()
+                );
+
+                if (!frames.isEmpty()) {
+                    variants.add(new VisualVariant(
+                            Map.copyOf(conditions),
+                            frames,
+                            Map.of(),
+                            durations
+                    ));
+                }
             }
         }
         return variants;
@@ -218,6 +285,28 @@ public final class StateworksVisualOverlay {
             ids.add(Identifier.parse(frames.get(key).getAsString()));
         }
         return ids.isEmpty() ? List.of() : List.copyOf(ids);
+    }
+
+    private static List<Long> parseDurations(JsonElement element, int frameCount) {
+        if (frameCount <= 0) return List.of();
+
+        List<Long> durations = new ArrayList<>();
+        if (element != null && element.isJsonArray()) {
+            for (JsonElement value : element.getAsJsonArray()) {
+                if (!value.isJsonPrimitive()) break;
+                try {
+                    durations.add(Math.max(1L, value.getAsLong()));
+                } catch (RuntimeException ignored) {
+                    break;
+                }
+            }
+        }
+
+        while (durations.size() < frameCount) durations.add(1L);
+        if (durations.size() > frameCount) {
+            durations = new ArrayList<>(durations.subList(0, frameCount));
+        }
+        return List.copyOf(durations);
     }
 
     private static List<VisualVariant> discoverVariants(ResourceManager resources, Identifier base) {
@@ -432,7 +521,8 @@ public final class StateworksVisualOverlay {
                     bakedVariants.add(new VisualVariant(
                             definition.conditions(),
                             definition.frameIds(),
-                            Map.copyOf(directional)
+                            Map.copyOf(directional),
+                            definition.durations()
                     ));
                 }
             }
@@ -484,10 +574,31 @@ public final class StateworksVisualOverlay {
     public record VisualVariant(
             Map<String, String> conditions,
             List<Identifier> frameIds,
-            Map<Direction, List<BlockStateModel>> directionalFrames
+            Map<Direction, List<BlockStateModel>> directionalFrames,
+            List<Long> durations
     ) {
         public VisualVariant(Map<String, String> conditions, List<Identifier> frameIds) {
-            this(conditions, frameIds, Map.of());
+            this(conditions, frameIds, Map.of(), List.of());
+        }
+
+        public VisualVariant(
+                Map<String, String> conditions,
+                List<Identifier> frameIds,
+                Map<Direction, List<BlockStateModel>> directionalFrames
+        ) {
+            this(conditions, frameIds, directionalFrames, List.of());
+        }
+
+        public boolean hasExplicitDurations() {
+            return !durations.isEmpty();
+        }
+
+        public long totalDuration() {
+            long total = 0L;
+            for (long duration : durations) {
+                total = Math.addExact(total, Math.max(1L, duration));
+            }
+            return total;
         }
 
         public boolean matches(BlockState state) {

@@ -1,0 +1,13 @@
+{
+  "block": "minecraft:furnace",
+  "states": {
+    "Heating": {
+      "model": "stateworks_example:block/furnace/heating",
+      "durations": [1, 1, 1, 1]
+    },
+    "Cooling": {
+      "model": "stateworks_example:block/furnace/cooling",
+      "durations": [1, 1, 1, 1]
+    }
+  }
+}

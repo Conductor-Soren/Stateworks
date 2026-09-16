@@ -100,15 +100,40 @@ public final class VirtualStateBlockModel implements DynamicBlockStateModel {
         float progress = visual.getProgress(now);
         int frameCount = transitionFrames.size();
 
-        // All frame counts are valid. A 4-tick transition can therefore use
-        // 2, 4, 8, 16, or any other number of frames without changing Java.
-        int frame = Math.max(
-                1,
-                Math.min(
-                        frameCount,
-                        (int) Math.ceil(progress * frameCount)
-                )
-        );
+        int frame;
+
+        if (!variant.hasExplicitDurations()) {
+            // Preserve the original Stateworks animation behavior for legacy
+            // resource-pack definitions. The registration's transition
+            // duration controls the animation and frames advance uniformly.
+            frame = Math.max(
+                    1,
+                    Math.min(
+                            frameCount,
+                            (int) Math.ceil(progress * frameCount)
+                    )
+            );
+        } else {
+            // Explicit JSON durations define a cumulative per-frame timeline.
+            long totalTicks = Math.max(1L, variant.totalDuration());
+            long elapsedTicks = Math.min(
+                    totalTicks - 1L,
+                    Math.max(0L, (long) Math.floor(progress * totalTicks))
+            );
+
+            frame = 1;
+            long accumulated = 0L;
+            for (int i = 0; i < frameCount; i++) {
+                long duration = i < variant.durations().size()
+                        ? Math.max(1L, variant.durations().get(i))
+                        : 1L;
+                accumulated += duration;
+                if (elapsedTicks < accumulated) {
+                    frame = i + 1;
+                    break;
+                }
+            }
+        }
 
         transitionFrames.get(frame - 1).collectParts(
                 level,

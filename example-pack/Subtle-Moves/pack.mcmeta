@@ -1,0 +1,11 @@
+{
+  "pack": {
+    "description": "Stateworks v1.0 Example Resource Pack",
+    "min_format": 84,
+    "max_format": 88,
+    "supported_formats": [
+      84,
+      88
+    ]
+  }
+}

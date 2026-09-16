@@ -72,6 +72,11 @@ stage_0 → stage_1
 stage_1 → stage_0
 ```
 
+Visual animations for these transitions can use the generated transition names
+`stage_0_to_stage_1` and `stage_1_to_stage_0`. If a resource-pack visual
+definition provides a per-frame `durations` array for either name, Stateworks
+uses that visual timeline independently of the logical transition duration.
+
 ### Example: Crop
 
 Crops use an `AGE` property:

@@ -96,30 +96,75 @@ public final class StateworksVisualStateManager {
             );
         }
 
-        long safeDuration =
-                Math.max(
-                        0L,
-                        transitionDuration
+        // Network/resource-pack transition times are expressed in Minecraft
+        // ticks. VisualState stores its clock in milliseconds because the
+        // client renderer uses System.currentTimeMillis(). Keep the units
+        // explicit at this boundary so a 12-tick animation lasts 600 ms,
+        // not 12 ms.
+        Key key = new Key(dimension, position.immutable());
+        VisualState existing = STATES.get(key);
+
+        /*
+         * The server may send several payloads while one logical transition
+         * is in progress. Do not restart the client-side visual timeline on
+         * every packet. The first packet establishes the visual start time;
+         * subsequent packets only refresh the state/signal data.
+         *
+         * This is especially important when a visual transition is shorter
+         * than the logical transition. For example, a 12-tick Jukebox
+         * animation can finish while the Boolean transition is still 50
+         * ticks long. Rebuilding the start time from the server's later
+         * elapsed value would otherwise clamp the elapsed time to 12 ticks
+         * and make the animation repeatedly appear/disappear or skip frames.
+         */
+        boolean sameTransition =
+                existing != null
+                        && java.util.Objects.equals(existing.stateName(), stateName)
+                        && java.util.Objects.equals(existing.previousStateName(), previousStateName)
+                        && java.util.Objects.equals(existing.visualTransitionName(), visualTransitionName);
+
+        long durationMillis = Math.max(0L, transitionDuration);
+
+        // TransitionDuration is already expressed in milliseconds. Only the
+        // explicit resource-pack visual duration is converted from Minecraft
+        // ticks (50 ms each) into milliseconds.
+        long visualDurationTicks =
+                StateworksVisualOverlay.getTransitionDuration(
+                        visualTransitionName
                 );
 
-        long safeElapsed =
-                Math.max(
-                        0L,
-                        Math.min(
-                                transitionElapsed,
-                                safeDuration
-                        )
-                );
+        if (visualDurationTicks > 0L) {
+            durationMillis =
+                    Math.multiplyExact(visualDurationTicks, 50L);
+        }
 
-        long clientStartTime =
-                System.currentTimeMillis()
-                        - safeElapsed;
+        long safeDuration = durationMillis;
+
+        long clientStartTime;
+
+        if (sameTransition && existing.transitionDuration() == safeDuration) {
+            // Preserve the original visual clock. This packet is only a
+            // state/signal refresh, not a new visual transition.
+            clientStartTime = existing.transitionStartTime();
+        } else {
+            // Network transitionElapsed and transitionDuration are already
+            // milliseconds. Do not multiply them by 50.
+            long safeElapsed =
+                    Math.max(
+                            0L,
+                            Math.min(
+                                    transitionElapsed,
+                                    safeDuration
+                            )
+                    );
+
+            clientStartTime =
+                    System.currentTimeMillis()
+                            - safeElapsed;
+        }
 
         STATES.put(
-                new Key(
-                        dimension,
-                        position.immutable()
-                ),
+                key,
                 new VisualState(
                         stateSetId,
                         stateName,
@@ -360,7 +405,7 @@ public final class StateworksVisualStateManager {
             }
 
             /*
-             * The four-frame visual transition has finished.  Dirty the block
+             * The visual transition has finished.  Dirty the block
              * one final time so the renderer drops the transition frame and
              * returns to Minecraft's normal blockstate model, then remove the
              * completed visual state from the client cache.
