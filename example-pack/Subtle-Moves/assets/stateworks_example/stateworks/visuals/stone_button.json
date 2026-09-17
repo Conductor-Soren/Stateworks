@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:stone_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/stone/pressed",
+    "unpressed": "stateworks_example:block/buttons/stone/unpressed"
+  }
+}

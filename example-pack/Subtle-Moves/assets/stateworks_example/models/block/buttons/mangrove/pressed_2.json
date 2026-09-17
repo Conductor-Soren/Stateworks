@@ -1,0 +1,6 @@
+{
+  "parent": "stateworks_example:block/buttons/pressed_2",
+  "textures": {
+    "texture": "stateworks_example:block/planks/mangrove_planks"
+  }
+}

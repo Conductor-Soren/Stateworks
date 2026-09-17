@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:bamboo_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/bamboo/pressed",
+    "unpressed": "stateworks_example:block/buttons/bamboo/unpressed"
+  }
+}

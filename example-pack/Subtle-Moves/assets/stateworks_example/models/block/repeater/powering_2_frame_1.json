@@ -5,9 +5,9 @@
 	"textures": {
 		"0": "stateworks_example:block/redstone_torch_off",
 		"1": "stateworks_example:block/smooth_stone",
-		"2": "stateworks_example:block/repeater_powering_2tick",
+		"2": "stateworks_example:block/repeater/repeater_powering_2tick",
 		"3": "stateworks_example:block/redstone_torch",
-		"particle": "stateworks_example:block/repeater_powering_2tick"
+		"particle": "stateworks_example:block/repeater/repeater_powering_2tick"
 	},
 	"elements": [
 		{

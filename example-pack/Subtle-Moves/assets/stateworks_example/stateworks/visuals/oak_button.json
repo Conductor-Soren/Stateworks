@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:oak_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/oak/pressed",
+    "unpressed": "stateworks_example:block/buttons/oak/unpressed"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "block": "minecraft:blast_furnace",
+  "states": {
+    "heating": {
+      "model": "stateworks_example:block/furnaces/blast/heating",
+      "durations": [1, 1, 1, 1]
+    },
+    "cooling": {
+      "model": "stateworks_example:block/furnaces/blast/cooling",
+      "durations": [1, 1, 1, 1]
+    }
+  }
+}

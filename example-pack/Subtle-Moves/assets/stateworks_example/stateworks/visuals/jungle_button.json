@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:jungle_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/jungle/pressed",
+    "unpressed": "stateworks_example:block/buttons/jungle/unpressed"
+  }
+}

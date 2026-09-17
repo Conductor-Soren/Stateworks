@@ -28,7 +28,7 @@ private BuiltinStateSets() {}
         registerBooleanBlocks(
                 "",
                 FurnaceBlock.LIT,
-                "cold", "hot", "Heating", "Cooling", 4L,
+                "cold", "hot", "heating", "cooling", 4L,
                 Blocks.FURNACE,
                 Blocks.BLAST_FURNACE,
                 Blocks.SMOKER
@@ -45,7 +45,7 @@ private BuiltinStateSets() {}
         registerBooleanBlocks(
                 "_pressed",
                 ButtonBlock.POWERED,
-                "off", "on", "Pressed", "Unpressed", 4L,
+                "off", "on", "pressed", "unpressed", 4L,
                 Blocks.OAK_BUTTON,
                 Blocks.SPRUCE_BUTTON,
                 Blocks.BIRCH_BUTTON,

@@ -1,12 +1,12 @@
 {
   "block": "minecraft:furnace",
   "states": {
-    "Heating": {
-      "model": "stateworks_example:block/furnace/heating",
+    "heating": {
+      "model": "stateworks_example:block/furnaces/furnace/heating",
       "durations": [1, 1, 1, 1]
     },
-    "Cooling": {
-      "model": "stateworks_example:block/furnace/cooling",
+    "cooling": {
+      "model": "stateworks_example:block/furnaces/furnace/cooling",
       "durations": [1, 1, 1, 1]
     }
   }

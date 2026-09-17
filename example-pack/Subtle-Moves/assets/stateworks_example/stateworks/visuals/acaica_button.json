@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:acacia_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/acacia/pressed",
+    "unpressed": "stateworks_example:block/buttons/acacia/unpressed"
+  }
+}

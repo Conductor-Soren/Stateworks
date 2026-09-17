@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:polished_blackstone_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/polished_blackstone/pressed",
+    "unpressed": "stateworks_example:block/buttons/polished_blackstone/unpressed"
+  }
+}

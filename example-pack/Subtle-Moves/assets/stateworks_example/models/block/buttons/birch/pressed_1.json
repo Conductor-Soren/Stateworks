@@ -1,0 +1,6 @@
+{
+  "parent": "stateworks_example:block/buttons/pressed_1",
+  "textures": {
+    "texture": "stateworks_example:block/planks/birch_planks"
+  }
+}

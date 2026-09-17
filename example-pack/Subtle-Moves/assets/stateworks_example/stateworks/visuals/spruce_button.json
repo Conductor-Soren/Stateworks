@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:spruce_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/spruce/pressed",
+    "unpressed": "stateworks_example:block/buttons/spruce/unpressed"
+  }
+}

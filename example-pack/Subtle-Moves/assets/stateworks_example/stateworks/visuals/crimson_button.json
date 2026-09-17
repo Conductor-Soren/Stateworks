@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:crimson_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/crimson/pressed",
+    "unpressed": "stateworks_example:block/buttons/crimson/unpressed"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:mangrove_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/mangrove/pressed",
+    "unpressed": "stateworks_example:block/buttons/mangrove/unpressed"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:birch_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/birch/pressed",
+    "unpressed": "stateworks_example:block/buttons/birch/unpressed"
+  }
+}

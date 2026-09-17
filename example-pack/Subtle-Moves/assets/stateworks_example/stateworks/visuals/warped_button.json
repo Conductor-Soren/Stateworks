@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:warped_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/warped/pressed",
+    "unpressed": "stateworks_example:block/buttons/warped/unpressed"
+  }
+}

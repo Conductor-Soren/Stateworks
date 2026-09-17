@@ -1,0 +1,25 @@
+{
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench, By Conductor Soren",
+	"textures": {
+		"bottom": "stateworks_example:block/furnaces/smoker/smoker_bottom",
+		"front": "stateworks_example:block/furnaces/smoker/frame_4",
+		"particle": "stateworks_example:block/furnaces/smoker/smoker_side",
+		"side": "stateworks_example:block/furnaces/smoker/smoker_side",
+		"top": "stateworks_example:block/furnaces/smoker/smoker_top"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#front"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#side"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#side"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#side"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#top"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#bottom"}
+			}
+		}
+	]
+}

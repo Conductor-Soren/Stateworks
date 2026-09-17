@@ -90,8 +90,8 @@ public final class VirtualStateBlockModel implements DynamicBlockStateModel {
             return;
         }
 
-        Direction facing = getFacing(state);
-        List<BlockStateModel> transitionFrames = variant.directionalFrames().get(facing);
+        StateworksVisualOverlay.ModelOrientation orientation = getOrientation(state);
+        List<BlockStateModel> transitionFrames = variant.directionalFrames().get(orientation);
         if (transitionFrames == null || transitionFrames.isEmpty()) {
             original.collectParts(level, pos, state, random, parts);
             return;
@@ -170,11 +170,20 @@ public final class VirtualStateBlockModel implements DynamicBlockStateModel {
         return best;
     }
 
-    private static Direction getFacing(BlockState state) {
+    private static StateworksVisualOverlay.ModelOrientation getOrientation(BlockState state) {
+        Direction facing = Direction.NORTH;
         if (state != null && state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            return state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+            facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+        } else if (state != null && state.hasProperty(BlockStateProperties.FACING)) {
+            facing = state.getValue(BlockStateProperties.FACING);
         }
-        return Direction.NORTH;
+
+        net.minecraft.world.level.block.state.properties.AttachFace face = null;
+        if (state != null && state.hasProperty(BlockStateProperties.ATTACH_FACE)) {
+            face = state.getValue(BlockStateProperties.ATTACH_FACE);
+        }
+
+        return new StateworksVisualOverlay.ModelOrientation(face, facing);
     }
 
     @Override

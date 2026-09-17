@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:cherry_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/cherry/pressed",
+    "unpressed": "stateworks_example:block/buttons/cherry/unpressed"
+  }
+}

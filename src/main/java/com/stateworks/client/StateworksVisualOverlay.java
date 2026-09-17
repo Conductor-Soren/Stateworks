@@ -9,10 +9,14 @@ import net.minecraft.client.renderer.block.dispatch.BlockModelRotation;
 import net.minecraft.client.resources.model.ModelDebugName;
 import net.minecraft.core.Direction;
 import com.mojang.math.OctahedralGroup;
+import com.mojang.math.Quadrant;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.model.standalone.SimpleUnbakedStandaloneModel;
@@ -403,40 +407,137 @@ public final class StateworksVisualOverlay {
     }
 
     /**
-     * Registers models frame-major: frame 1's four directions, then frame 2,
-     * etc. Keeping this ordering explicit prevents the transition frame from
-     * accidentally changing orientation between ticks.
+     * Registers models frame-major for every supported orientation.
      */
     private static List<StandaloneModelKey<BlockStateModel>> registerFrameModels(
             ModelEvent.RegisterStandalone event,
             List<Identifier> frameIds,
             Identifier blockId
     ) {
-        Direction[] directions = HORIZONTAL_DIRECTIONS;
+        boolean button = BuiltInRegistries.BLOCK.getValue(blockId) instanceof ButtonBlock;
+
+        List<ModelOrientation> orientations = new ArrayList<>();
+        if (button) {
+            for (AttachFace face : AttachFace.values()) {
+                for (Direction facing : HORIZONTAL_DIRECTIONS) {
+                    orientations.add(new ModelOrientation(face, facing));
+                }
+            }
+        } else {
+            orientations.addAll(orientationsForBlock(blockId));
+        }
+
         List<StandaloneModelKey<BlockStateModel>> keys =
-                new ArrayList<>(frameIds.size() * directions.length);
+                new ArrayList<>(frameIds.size() * orientations.size());
 
         for (Identifier frameId : frameIds) {
-            for (Direction direction : directions) {
+            for (ModelOrientation orientation : orientations) {
                 StandaloneModelKey<BlockStateModel> key = new StandaloneModelKey<>(new ModelDebugName() {
                     @Override
                     public String debugName() {
-                        return "stateworks: " + frameId + " [" + direction.getName() + "]";
+                        String orientationName = orientation.face() == null
+                                ? orientation.facing().getName()
+                                : orientation.face().getSerializedName() + "/" + orientation.facing().getName();
+                        return "stateworks: " + frameId + " [" + orientationName + "]";
                     }
                 });
 
                 keys.add(key);
                 event.register(key, SimpleUnbakedStandaloneModel.blockStateModel(
                         frameId,
-                        BlockModelRotation.get(rotationFor(
-                                direction,
-                                blockId
-                        ))
+                        button
+                                ? ((orientation.face() == AttachFace.FLOOR
+                                        || orientation.face() == AttachFace.CEILING)
+                                        ? BlockModelRotation.get(
+                                                buttonRotation(orientation.face(), orientation.facing())
+                                        )
+                                        : BlockModelRotation.get(
+                                                buttonRotation(orientation.face(), orientation.facing())
+                                        ).withUvLock())
+                                : BlockModelRotation.get(
+                                        rotationFor(orientation.facing(), blockId)
+                                )
                 ));
             }
         }
 
         return List.copyOf(keys);
+    }
+
+    private static List<ModelOrientation> orientationsForBlock(Identifier blockId) {
+        var block = BuiltInRegistries.BLOCK.getValue(blockId);
+        BlockState state = block.defaultBlockState();
+
+        List<ModelOrientation> orientations = new ArrayList<>();
+        if (state.hasProperty(BlockStateProperties.FACING)) {
+            for (Direction direction : Direction.values()) {
+                orientations.add(new ModelOrientation(null, direction));
+            }
+        } else if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            for (Direction direction : HORIZONTAL_DIRECTIONS) {
+                orientations.add(new ModelOrientation(null, direction));
+            }
+        } else {
+            // Non-facing blocks keep the historical four-orientation registration
+            // so existing animation packs remain compatible.
+            for (Direction direction : HORIZONTAL_DIRECTIONS) {
+                orientations.add(new ModelOrientation(null, direction));
+            }
+        }
+
+        return orientations;
+    }
+
+    private static OctahedralGroup buttonRotation(
+            AttachFace face,
+            Direction facing
+    ) {
+        /*
+         * Match vanilla button blockstate rotations. The vanilla button model
+         * uses the same horizontal Y rotation on the floor and wall, while the
+         * ceiling reverses the horizontal rotation after the 180-degree X turn.
+         *
+         * Wall buttons use UV locking because their side-facing attachment
+         * needs the texture orientation preserved. Floor and ceiling buttons
+         * intentionally use the raw rotation so their top-facing texture
+         * rotates with the model.
+         */
+        int y = switch (face) {
+            case FLOOR, WALL -> switch (facing) {
+                case NORTH -> 0;
+                case EAST -> 90;
+                case SOUTH -> 180;
+                case WEST -> 270;
+                default -> 0;
+            };
+            case CEILING -> switch (facing) {
+                case NORTH -> 180;
+                case EAST -> 270;
+                case SOUTH -> 0;
+                case WEST -> 90;
+                default -> 0;
+            };
+        };
+
+        int x = switch (face) {
+            case FLOOR -> 0;
+            case WALL -> 90;
+            case CEILING -> 180;
+        };
+
+        return Quadrant.fromXYAngles(quadrant(x), quadrant(y));
+    }
+
+    private static Quadrant quadrant(int degrees) {
+        return switch (degrees) {
+            case 0 -> Quadrant.R0;
+            case 90 -> Quadrant.R90;
+            case 180 -> Quadrant.R180;
+            case 270 -> Quadrant.R270;
+            default -> throw new IllegalArgumentException(
+                    "Rotation must be a multiple of 90 degrees: " + degrees
+            );
+        };
     }
 
     private static OctahedralGroup rotationFor(
@@ -449,7 +550,9 @@ public final class StateworksVisualOverlay {
          * by the example pack are authored with NORTH as their front.
          */
         boolean northBase =
-                blockId.equals(Identifier.parse("minecraft:furnace"));
+                blockId.equals(Identifier.parse("minecraft:furnace"))
+                        || blockId.equals(Identifier.parse("minecraft:blast_furnace"))
+                        || blockId.equals(Identifier.parse("minecraft:smoker"));
 
         if (northBase) {
             return switch (direction) {
@@ -470,6 +573,9 @@ public final class StateworksVisualOverlay {
             case UP -> OctahedralGroup.BLOCK_ROT_X_90;
             case DOWN -> OctahedralGroup.BLOCK_ROT_X_270;
         };
+    }
+
+    public record ModelOrientation(AttachFace face, Direction facing) {
     }
 
     public static Map<String, List<VisualVariant>> bakedFrames(
@@ -494,30 +600,40 @@ public final class StateworksVisualOverlay {
             for (int variantIndex = 0; variantIndex < entry.getValue().size(); variantIndex++) {
                 VisualVariant definition = entry.getValue().get(variantIndex);
                 List<StandaloneModelKey<BlockStateModel>> keys = variantKeys.get(variantIndex);
-                Direction[] directions = HORIZONTAL_DIRECTIONS;
+                boolean button = BuiltInRegistries.BLOCK.getValue(block) instanceof ButtonBlock;
+                List<ModelOrientation> orientations = new ArrayList<>();
 
-                if (keys.size() != definition.frameIds().size() * directions.length) {
+                if (button) {
+                    for (AttachFace face : AttachFace.values()) {
+                        for (Direction direction : HORIZONTAL_DIRECTIONS) {
+                            orientations.add(new ModelOrientation(face, direction));
+                        }
+                    }
+                } else {
+                    orientations.addAll(orientationsForBlock(block));
+                }
+
+                if (keys.size() != definition.frameIds().size() * orientations.size()) {
                     continue;
                 }
 
-                Map<Direction, List<BlockStateModel>> directional =
-                        new EnumMap<>(Direction.class);
+                Map<ModelOrientation, List<BlockStateModel>> directional = new HashMap<>();
 
-                for (int directionIndex = 0; directionIndex < directions.length; directionIndex++) {
-                    Direction direction = directions[directionIndex];
+                for (int orientationIndex = 0; orientationIndex < orientations.size(); orientationIndex++) {
+                    ModelOrientation orientation = orientations.get(orientationIndex);
                     List<BlockStateModel> frames = new ArrayList<>(definition.frameIds().size());
 
                     for (int frameIndex = 0; frameIndex < definition.frameIds().size(); frameIndex++) {
-                        int keyIndex = frameIndex * directions.length + directionIndex;
+                        int keyIndex = frameIndex * orientations.size() + orientationIndex;
                         frames.add(baked.get(keys.get(keyIndex)));
                     }
 
                     if (frames.stream().allMatch(Objects::nonNull)) {
-                        directional.put(direction, List.copyOf(frames));
+                        directional.put(orientation, List.copyOf(frames));
                     }
                 }
 
-                if (directional.size() == directions.length) {
+                if (directional.size() == orientations.size()) {
                     bakedVariants.add(new VisualVariant(
                             definition.conditions(),
                             definition.frameIds(),
@@ -574,7 +690,7 @@ public final class StateworksVisualOverlay {
     public record VisualVariant(
             Map<String, String> conditions,
             List<Identifier> frameIds,
-            Map<Direction, List<BlockStateModel>> directionalFrames,
+            Map<ModelOrientation, List<BlockStateModel>> directionalFrames,
             List<Long> durations
     ) {
         public VisualVariant(Map<String, String> conditions, List<Identifier> frameIds) {
@@ -584,7 +700,7 @@ public final class StateworksVisualOverlay {
         public VisualVariant(
                 Map<String, String> conditions,
                 List<Identifier> frameIds,
-                Map<Direction, List<BlockStateModel>> directionalFrames
+                Map<ModelOrientation, List<BlockStateModel>> directionalFrames
         ) {
             this(conditions, frameIds, directionalFrames, List.of());
         }

@@ -1,0 +1,7 @@
+{
+  "block": "minecraft:dark_oak_button",
+  "states": {
+    "pressed": "stateworks_example:block/buttons/dark_oak/pressed",
+    "unpressed": "stateworks_example:block/buttons/dark_oak/unpressed"
+  }
+}
