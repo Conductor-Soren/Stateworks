@@ -496,28 +496,30 @@ A transition can optionally select different frame sets based on the block's
 other vanilla properties. This is useful when the property being animated is
 not enough to describe the model, such as doors and trapdoors.
 
-The normal/simple format still works:
+Every visual definition uses the required `animations` format and explicitly lists its Minecraft model identifiers:
 
 ```json
 {
   "block": "minecraft:oak_door",
-  "states": {
+  "animations": {
     "opening": {
-      "1": "example:oak_door/opening_1",
-      "2": "example:oak_door/opening_2",
-      "3": "example:oak_door/opening_3",
-      "4": "example:oak_door/opening_4"
+      "frames": [
+        "example:block/oak_door/opening_1",
+        "example:block/oak_door/opening_2",
+        "example:block/oak_door/opening_3",
+        "example:block/oak_door/opening_4"
+      ]
     }
   }
 }
 ```
 
-For property-specific models, use `variants`:
+For property-specific models, use `variants`. Every variant has its own explicit frame array:
 
 ```json
 {
   "block": "minecraft:oak_door",
-  "states": {
+  "animations": {
     "opening": {
       "variants": [
         {
@@ -525,30 +527,32 @@ For property-specific models, use `variants`:
             "hinge": "left",
             "half": "lower"
           },
-          "frames": {
-            "1": "example:oak_door/opening_left_1",
-            "2": "example:oak_door/opening_left_2",
-            "3": "example:oak_door/opening_left_3",
-            "4": "example:oak_door/opening_left_4"
-          }
+          "frames": [
+            "example:block/oak_door/opening_left_1",
+            "example:block/oak_door/opening_left_2",
+            "example:block/oak_door/opening_left_3",
+            "example:block/oak_door/opening_left_4"
+          ]
         },
         {
           "when": {
             "hinge": "right",
             "half": "lower"
           },
-          "frames": {
-            "1": "example:oak_door/opening_right_1",
-            "2": "example:oak_door/opening_right_2",
-            "3": "example:oak_door/opening_right_3",
-            "4": "example:oak_door/opening_right_4"
-          }
+          "frames": [
+            "example:block/oak_door/opening_right_1",
+            "example:block/oak_door/opening_right_2",
+            "example:block/oak_door/opening_right_3",
+            "example:block/oak_door/opening_right_4"
+          ]
         }
       ]
     }
   }
 }
 ```
+
+A frame identifier such as `example:block/oak_door/opening_left_1` resolves to `assets/example/models/block/oak_door/opening_left_1.json`. Minecraft loads the model and resolves its native parent/texture inheritance.
 
 `when` keys are vanilla BlockState property names and values are their normal
 serialized names. Variants can specify only the properties that matter.

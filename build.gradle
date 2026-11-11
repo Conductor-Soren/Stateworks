@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'net.neoforged.moddev' version '2.0.148'
     id 'idea'
 }
 
@@ -35,7 +35,14 @@ base {
     archivesName = mod_id
 }
 
-// Minecraft 26.2 uses Java 25, so Stateworks targets Java 25.
+// The NeoForge artifact remains a single installable JAR. Include the shared
+// core classes in that JAR while keeping core independently buildable.
+evaluationDependsOn(':core')
+tasks.named('jar', Jar).configure {
+    from project(':core').sourceSets.main.output
+}
+
+// Minecraft 26.3 uses Java 25, so Stateworks targets Java 25.
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
@@ -111,6 +118,8 @@ configurations {
 }
 
 dependencies {
+    implementation project(':core')
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

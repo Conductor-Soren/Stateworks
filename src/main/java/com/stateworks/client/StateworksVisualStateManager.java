@@ -2,13 +2,13 @@ package com.stateworks.client;
 
 import com.stateworks.visual.*;
 
-import com.stateworks.context.*;
+import com.stateworks.core.context.StateContext;
 import com.stateworks.condition.*;
 import com.stateworks.state.*;
 import com.stateworks.transition.*;
 import com.stateworks.signal.*;
 import com.stateworks.output.*;
-import com.stateworks.network.*;
+import com.stateworks.minecraft.network.*;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -18,9 +18,16 @@ import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Map;
+import java.util.function.ToLongFunction;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class StateworksVisualStateManager {
+
+    private static volatile ToLongFunction<String> visualDurationResolver = ignored -> 0L;
+
+    public static void setVisualDurationResolver(ToLongFunction<String> resolver) {
+        visualDurationResolver = resolver == null ? ignored -> 0L : resolver;
+    }
 
     private static final Map<Key, VisualState> STATES =
             new ConcurrentHashMap<>();
@@ -129,9 +136,7 @@ public final class StateworksVisualStateManager {
         // explicit resource-pack visual duration is converted from Minecraft
         // ticks (50 ms each) into milliseconds.
         long visualDurationTicks =
-                StateworksVisualOverlay.getTransitionDuration(
-                        visualTransitionName
-                );
+                visualDurationResolver.applyAsLong(visualTransitionName);
 
         if (visualDurationTicks > 0L) {
             durationMillis =
