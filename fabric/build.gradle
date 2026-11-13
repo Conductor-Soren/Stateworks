@@ -1,3 +1,4 @@
+
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.19-SNAPSHOT'
 }
@@ -55,10 +56,15 @@ tasks.named('jar', Jar).configure {
     from project(':core').sourceSets.main.output
 }
 
-processResources {
-    inputs.property 'version', project.version
+// Capture the version during configuration so task execution does not
+// access the Gradle project object from the nested filesMatching closure.
+def fabricModVersion = project.version.toString()
+
+tasks.named('processResources', ProcessResources).configure {
+    inputs.property 'version', fabricModVersion
+
     filesMatching('fabric.mod.json') {
-        expand 'version': project.version
+        expand 'version': fabricModVersion
     }
 }
 
