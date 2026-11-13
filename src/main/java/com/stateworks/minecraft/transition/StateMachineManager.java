@@ -3,6 +3,9 @@ package com.stateworks.minecraft.transition;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.RepeaterBlock;
+import net.minecraft.world.level.block.Blocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stateworks.transition.StateMachine;
 import com.stateworks.transition.StateTransition;
@@ -26,6 +29,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class StateMachineManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("stateworks");
+
+    private static boolean isFurnaceFamily(BlockState state) {
+        return state.is(Blocks.FURNACE)
+                || state.is(Blocks.BLAST_FURNACE)
+                || state.is(Blocks.SMOKER);
+    }
 
     private final VisualStateTransport visualStateTransport;
 
@@ -90,6 +101,15 @@ public final class StateMachineManager {
 
         MinecraftStateContext context = new MinecraftStateContext(level, pos);
         String stateSetId = StateRegistry.INSTANCE.findApplicableSet(context);
+        if (isFurnaceFamily(context.getBlockState())) {
+            LOGGER.info(
+                    "[Stateworks TRACE] StateMachineManager update: block={} lit={} selectedSet={} pos={}",
+                    context.getBlockState().getBlock(),
+                    context.getBlockState().getValue(net.minecraft.world.level.block.FurnaceBlock.LIT),
+                    stateSetId,
+                    pos
+            );
+        }
 
         if (stateSetId == null) {
             machines.remove(new MachineKey(level.dimension(), pos.immutable()));

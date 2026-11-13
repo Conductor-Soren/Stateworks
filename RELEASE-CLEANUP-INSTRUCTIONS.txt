@@ -1,0 +1,7 @@
+Stateworks 0.1.4 release cleanup
+
+Changes in this source snapshot:
+- NeoForge description now matches Fabric: "A visual state-transition framework for Minecraft."
+- Removed src/main/java/com/stateworks/TransitionTest.java (development-only standalone test program).
+
+Apply this snapshot over your existing project. Preserve your existing gradle/wrapper directory; it is not included in this uploaded source snapshot.

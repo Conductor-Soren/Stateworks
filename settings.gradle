@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        maven { url = "https://maven.fabricmc.net/" }
         gradlePluginPortal()
     }
 }
@@ -9,3 +10,4 @@ plugins {
 }
 
 include 'core'
+include 'fabric'

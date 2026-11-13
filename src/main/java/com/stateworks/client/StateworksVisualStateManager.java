@@ -32,6 +32,9 @@ public final class StateworksVisualStateManager {
     private static final Map<Key, VisualState> STATES =
             new ConcurrentHashMap<>();
 
+    private static final Map<Key, Long> LAST_TIMELINE_TRACE =
+            new ConcurrentHashMap<>();
+
     private StateworksVisualStateManager() {
     }
 
@@ -398,6 +401,17 @@ public final class StateworksVisualStateManager {
             }
 
             if (state.isTransitioning(currentTime)) {
+                Long lastTrace = LAST_TIMELINE_TRACE.get(key);
+                if (lastTrace == null || currentTime - lastTrace >= 250L) {
+                    LAST_TIMELINE_TRACE.put(key, currentTime);
+                    System.out.println(
+                            "[Stateworks CLIENT TIMELINE] pos=" + key.position()
+                                    + " visual=" + state.visualTransitionName()
+                                    + " progress=" + state.getProgress(currentTime)
+                                    + " elapsedMs=" + Math.max(0L, currentTime - state.transitionStartTime())
+                                    + " durationMs=" + state.transitionDuration()
+                    );
+                }
                 minecraft.levelExtractor.setBlocksDirty(
                         key.position().getX(),
                         key.position().getY(),
@@ -425,6 +439,7 @@ public final class StateworksVisualStateManager {
             );
 
             STATES.remove(key, state);
+            LAST_TIMELINE_TRACE.remove(key);
         }
     }
 
@@ -447,6 +462,7 @@ public final class StateworksVisualStateManager {
 
     public static void clear() {
         STATES.clear();
+        LAST_TIMELINE_TRACE.clear();
     }
 
     public record VisualState(

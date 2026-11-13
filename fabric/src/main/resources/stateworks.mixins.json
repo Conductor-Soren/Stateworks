@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.stateworks.fabric.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "LevelChunkMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

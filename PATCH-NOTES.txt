@@ -1,0 +1,27 @@
+Stateworks Fabric repeater timing resolver fix
+
+Replace the existing file at:
+fabric/src/client/java/com/stateworks/fabric/client/FabricVisualModelPlugin.java
+
+Root cause:
+The Fabric JSON reader fills omitted frame durations with 1 tick so the
+renderer can divide animation progress among frames. The duration resolver
+mistakenly treated those generated defaults as explicit user-authored timing.
+For the repeater variants, it selected the longest variant (4 frames) and
+used 4 ticks as the duration for every delay setting. That overrode the
+repeater's Java timing of delay * 2 ticks, making the 3- and 4-tick animations
+finish early.
+
+Fix:
+Track whether a durations array was explicitly present in the JSON. Only
+explicitly-authored durations may override the Stateworks transition duration.
+When the repeater JSON omits durations, the Java custom delay timing remains
+authoritative: 1/2/3/4 settings last 2/4/6/8 game ticks. Default per-frame
+values remain available for proportional frame selection and do not alter the
+overall transition duration.
+
+No resource-pack JSON changes are required. No NeoForge source changes are
+included; its adapter already distinguishes explicit durations.
+
+Build/test after applying:
+.\gradlew clean build --no-configuration-cache

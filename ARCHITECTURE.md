@@ -115,3 +115,21 @@ A future Fabric integration can reuse `:core`, `com.stateworks.minecraft` game a
 The rendering hook is intentionally still loader-specific: NeoForge's `DynamicBlockStateModel` and standalone model loader are not treated as portable APIs. A Fabric renderer will need its own implementation against Fabric's supported model-loading hooks rather than trying to reuse NeoForge classes.
 
 No Fabric dependency or Fabric source set has been added in this step. The purpose is to make the existing NeoForge boundary explicit and provide a narrow, testable transport seam while retaining NeoForge as the working reference implementation.
+
+
+## Phase 5 — Fabric adapter implementation
+
+### Step 1: Fabric common/server/client bootstrap
+
+A separate `fabric` Gradle subproject now targets Minecraft 26.3 using Fabric Loom. It reuses the standalone core and shared Minecraft-facing adapters while keeping Fabric-specific entrypoints, networking, lifecycle events, key mappings, and mixins in the `fabric` module. The Fabric artifact packages the shared core classes into a single installable JAR.
+
+The first adapter slice includes server-side state-machine ticking, data-definition reload registration, visual-state payload delivery, client payload receipt, and block-state update queuing. The Fabric model-loading/rendering adapter is not yet implemented; resource-pack transition frames will not render on Fabric until Phase 5 Step 2 is complete. NeoForge remains unchanged and is still the verified reference implementation.
+
+
+## Phase 5, Step 2: Fabric client model integration
+
+The Fabric adapter now has a client-only model integration under `fabric/src/client/java/com/stateworks/fabric/client`. `FabricVisualModelPlugin` uses Fabric's preparable model-loading plugin to discover visual definitions from the same `stateworks/visuals/` resource path and parse the existing explicit `animations` schema. Every referenced frame is registered as a Fabric extra block-state model with the appropriate orientation.
+
+`FabricVisualUnbakedRoot` preserves the normal vanilla block-state model bake path and wraps the resulting model in `FabricAnimatedBlockStateModel`. During Fabric geometry emission, the wrapper reads the shared `StateworksVisualStateManager`, selects the matching transition and most-specific property variant, calculates the frame from the same duration timeline, and delegates geometry emission to the selected baked model. The model manager supplies the already-baked extra model by key.
+
+The Fabric adapter does not implement its own model geometry or texture resolver. Minecraft continues to resolve parent/child inheritance, textures, and model baking. NeoForge's model integration remains unchanged. Build and in-game verification are still required before this step is accepted.

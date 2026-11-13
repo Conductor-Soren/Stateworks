@@ -14,19 +14,9 @@ authors="Stateworks"
 iconFile="icon.png"
 
 description='''
-Stateworks is a visual state-transition framework for Minecraft.
-
-It allows resource packs to define custom visual transitions between
-block states while preserving the underlying Minecraft block behavior.
-
-Stateworks Alpha 1 includes configurable boolean and property-based
-state transitions, block-family registration, custom transition timing,
-and specialized state handling for blocks such as repeaters, furnaces,
-redstone dust, bamboo, doors, trapdoors, buttons, crops, levers, and
-redstone torches.
-
-This is an early Alpha release intended for testing and development.
+A visual state-transition framework for Minecraft.
 '''
+
 
 [[dependencies.${mod_id}]]
     modId="neoforge"

@@ -1,0 +1,90 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.19-SNAPSHOT'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = "stateworks-fabric"
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    implementation project(':core')
+}
+
+// Create Loom's dedicated client source set before assigning shared client classes.
+loom {
+    splitEnvironmentSourceSets()
+}
+
+// Reuse the verified Minecraft-facing adapter and client logic. Loader-specific
+// code remains inside this module; NeoForge packages are deliberately excluded.
+sourceSets {
+    main {
+        java {
+            srcDir '../src/main/java'
+            include 'com/stateworks/minecraft/**'
+            include 'com/stateworks/fabric/**'
+        }
+        resources {
+            srcDir '../src/main/resources'
+        }
+    }
+    client {
+        java {
+            srcDir '../src/main/java'
+            include 'com/stateworks/client/**'
+            include 'com/stateworks/fabric/client/**'
+        }
+    }
+}
+
+// Keep the Fabric distribution as one installable mod JAR, like NeoForge.
+evaluationDependsOn(':core')
+tasks.named('jar', Jar).configure {
+    from project(':core').sourceSets.main.output
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+}
+
+loom {
+    mods {
+        stateworks {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client')
+        }
+        server {
+            server()
+            setConfigName('Fabric Server')
+        }
+    }
+}

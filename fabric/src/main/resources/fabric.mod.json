@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "stateworks",
+  "version": "${version}",
+  "name": "Stateworks",
+  "description": "A visual state-transition framework for Minecraft.",
+  "authors": ["Stateworks"],
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.stateworks.fabric.StateworksFabric"],
+    "client": ["com.stateworks.fabric.client.StateworksFabricClient"]
+  },
+  "mixins": [
+    "stateworks.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "fabric-api": "*",
+    "minecraft": "~26.3",
+    "java": ">=25"
+  }
+}
